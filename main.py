@@ -4,6 +4,8 @@ import logging
 from dotenv import load_dotenv
 import os
 import time
+import json
+import asyncio
 # Load environment variables
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
@@ -18,7 +20,36 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 counting_channel_id = None
 current_count = 0
-last_counter = None  # ID of last user who counted
+last_counter = None
+
+STATE_FILE = "counting_state.json"
+
+def save_state():
+    state = {
+        "counting_channel_id": counting_channel_id,
+        "current_count": current_count,
+        "last_counter": last_counter
+    }
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f)
+
+def load_state():
+    global counting_channel_id, current_count, last_counter
+    try:
+        with open(STATE_FILE, "r") as f:
+            state = json.load(f)
+            counting_channel_id = state.get("counting_channel_id")
+            current_count = state.get("current_count", 0)
+            last_counter = state.get("last_counter")
+    except FileNotFoundError:
+        counting_channel_id = None
+        current_count = 0
+        last_counter = None
+
+@bot.event
+async def on_ready():
+    load_state()
+    print(f"Logged in as {bot.user}. Counting channel: {counting_channel_id}, count: {current_count}")
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -27,6 +58,7 @@ async def setcounting(ctx, channel: discord.TextChannel):
     counting_channel_id = channel.id
     current_count = 0
     last_counter = None
+    save_state()
     await ctx.send(f"✅ Counting channel set to {channel.mention}. Counter reset to 0.")
 
 @setcounting.error
@@ -42,7 +74,11 @@ async def on_message(message):
         return
 
     if counting_channel_id and message.channel.id == counting_channel_id:
-        expr = message.content.strip()
+        content = message.content.strip()
+        if not content:
+            return
+
+        first_token = content.split()[0]
 
         safe_globals = {
             "__builtins__": {},
@@ -84,25 +120,25 @@ async def on_message(message):
         }
 
         try:
-            value = eval(expr, safe_globals, {})
+            value = eval(first_token, safe_globals, {})
             value = round(float(value))
         except:
-            await message.channel.send("❌ Invalid expression, please try again!")
+            # Invalid expression silently ignored
             return
 
-        # Check if the same user is counting twice in a row
         if message.author.id == last_counter:
             await message.channel.send(
                 f"❌ {message.author.mention}, you counted twice in a row and lost! The count resets to 1."
             )
             current_count = 0
             last_counter = None
+            save_state()
             return
 
-        # Check if the number is the expected next number
         if value == current_count + 1:
             current_count += 1
             last_counter = message.author.id
+            save_state()
             await message.add_reaction("✅")
         else:
             await message.channel.send(
@@ -112,6 +148,7 @@ async def on_message(message):
             )
             current_count = 0
             last_counter = None
+            save_state()
 
     await bot.process_commands(message)
 
