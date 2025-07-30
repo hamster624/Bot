@@ -69,7 +69,7 @@ async def calc(ctx, *, expression: str):
             "power": power,
             "exp": exp,
             "lambertw": lambertw,
-            "OoMs": OoMs,
+            "ooms": OoMs,
             "root": root,
             "sqrt": sqrt,
             "eq": eq,
