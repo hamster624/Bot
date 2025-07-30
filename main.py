@@ -820,7 +820,7 @@ def lambertw(z):
 
 def OoMs(start, end, time=1):
     if gt(start, end): 
-        raise ValueError("OoMs error: start for the OoMs cant be more than the end")
+        return("OoMs error: start for the OoMs cant be more than the end")
     slg_end = slog(end)
     slg_start = slog(start)
     slg_fl_start = math.floor(slg_start)
