@@ -176,7 +176,7 @@ def tetration(a, h):
     try:
         h_float = float(h)
     except (TypeError, ValueError):
-        return "Error: Tetration height must be a valid number"
+        return "Error: Tetration height must be a valid number below 1e308"
     
     sign_a, abs_a = get_sign_and_abs(a)
     if sign_a == -1:
