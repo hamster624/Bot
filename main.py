@@ -31,14 +31,14 @@ async def guide(ctx):
         "suffix_to_scientific"
     ]
 
-	operations = [
+    operations = [
 	    "tetration (tetr)", "pow (power)", "exp", "root", "sqrt", "addlayer",
 	    "log", "ln", "logbase", "slog", "lambertw",
 	    "fact (factorial)", "gamma", "OoMs",
 	    "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
 	    "eq", "lt", "gt", "gte", "lte", "min", "max",
 	    "floor", "ceil"
-	]
+     ]
 
 
     help_message = "**📘 !calc Help**\n\n"
