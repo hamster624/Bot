@@ -142,7 +142,7 @@ async def on_message(message):
             await message.add_reaction("✅")
         else:
             await message.channel.send(
-                f"❌ {message.author.mention} failed at **{value}**!\n"
+                f"❌ {message.author.mention} failed!\n"
                 f"➡ The next number is now **1**.\n"
                 f"🔹 Last successful number was **{current_count}**."
             )
