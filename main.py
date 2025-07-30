@@ -121,10 +121,10 @@ async def calc(ctx, *, expression: str):
         except:
             value = expr
         result = formats[fmt_name](value)
-        await ctx.send(f"**Result:** ```{result}```")
+        await ctx.reply(f"**Result:** ```{result}```", mention_author=False)
 
     except Exception as e:
-        await ctx.send(f"Error: {e}")
+        await ctx.reply(f"Error: {e}", mention_author=False)
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
