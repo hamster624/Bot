@@ -78,7 +78,7 @@ async def on_message(message):
         if not content:
             return
 
-        first_token = content.split()[0]
+        first_token = content.split()[0].lower()
 
         safe_globals = {
             "__builtins__": {},
