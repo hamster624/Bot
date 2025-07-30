@@ -124,7 +124,7 @@ async def calc(ctx, *, expression: str):
         await ctx.reply(f"**Result:** ```{result}```", mention_author=False)
 
     except Exception as e:
-        await ctx.reply(f"Error: {e}", mention_author=False)
+        await ctx.reply(f"Error, do !guide for help", mention_author=False)
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
