@@ -46,7 +46,7 @@ async def guide(ctx):
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
     help_message += "💡 *Usage:* `!calc <expression> [format]`\nExample: `!calc tetr(10,10) letter`"
 
-    await ctx.send(f"```{help_message}```")
+    await ctx.send(help_message)
 
 @bot.command()
 async def calc(ctx, *, expression: str):
