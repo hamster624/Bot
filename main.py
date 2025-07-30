@@ -3,7 +3,7 @@ from discord.ext import commands
 import logging
 from dotenv import load_dotenv
 import os
-
+import time
 # Load environment variables
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
@@ -116,12 +116,22 @@ async def calc(ctx, *, expression: str):
             "logbase": LogBase,
         }
 
+        start_time = time.time()  # Start timer
+
         try:
             value = eval(expr, safe_globals, {})
         except:
             value = expr
+        
         result = formats[fmt_name](value)
-        await ctx.reply(f"**Result:** ```{result}```", mention_author=False)
+        
+        end_time = time.time()  # End timer
+        elapsed = end_time - start_time
+
+        await ctx.reply(
+            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds",
+            mention_author=False
+        )
 
     except Exception as e:
         await ctx.reply(f"Error, do !guide for help", mention_author=False)
