@@ -91,7 +91,7 @@ async def calc(ctx, *, expression: str):
         except:
             value = expr
         result = formats[fmt_name](value)
-        await ctx.send(f"**Result:** `{result}`")
+        await ctx.send(f"**Result:** ```{result}```")
 
     except Exception as e:
         await ctx.send(f"Error: {e}")
