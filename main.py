@@ -17,6 +17,36 @@ intents.messages = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
+@bot.command()
+async def guide(ctx):
+    """
+    Displays all available operations and notations for the !calc command.
+    """
+    formats = [
+        "format",
+        "power10_tower",
+        "correct",
+        "hyper_e",
+        "letter",
+        "suffix_to_scientific"
+    ]
+
+	operations = [
+	    "tetration (tetr)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+	    "log", "ln", "logbase", "slog", "lambertw",
+	    "fact (factorial)", "gamma", "OoMs",
+	    "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
+	    "eq", "lt", "gt", "gte", "lte", "min", "max",
+	    "floor", "ceil"
+	]
+
+
+    help_message = "**📘 !calc Help**\n\n"
+    help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
+    help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
+    help_message += "💡 *Usage:* `!calc <expression> [format]`\nExample: `!calc tetr(10,10) letter`"
+
+    await ctx.send(```help_message```)
 
 @bot.command()
 async def calc(ctx, *, expression: str):
