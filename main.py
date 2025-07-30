@@ -21,7 +21,36 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 counting_channel_id = None
 current_count = 0
 last_counter = None
+STATE_FILE = "counting_state.json"
+state = {}
 
+def save_state():
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f)
+
+def load_state():
+    global state
+    try:
+        with open(STATE_FILE, "r") as f:
+            state = json.load(f)
+    except FileNotFoundError:
+        state = {}
+
+def get_guild_state(guild_id):
+    # Return the guild's counting data or defaults if none saved yet
+    return state.get(str(guild_id), {
+        "counting_channel_id": None,
+        "current_count": 0,
+        "last_counter": None
+    })
+
+def set_guild_state(guild_id, counting_channel_id, current_count, last_counter):
+    state[str(guild_id)] = {
+        "counting_channel_id": counting_channel_id,
+        "current_count": current_count,
+        "last_counter": last_counter
+    }
+    save_state()
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setcounting(ctx, channel: discord.TextChannel):
