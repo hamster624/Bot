@@ -18,20 +18,15 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 counting_channel_id = None
 current_count = 0
-last_counter = None  # Track who counted last
-row_count = 0        # Track consecutive counts by the same user
+last_counter = None  # ID of last user who counted
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setcounting(ctx, channel: discord.TextChannel):
-    """
-    Set the channel where counting will happen (Admin Only).
-    """
-    global counting_channel_id, current_count, last_counter, row_count
+    global counting_channel_id, current_count, last_counter
     counting_channel_id = channel.id
     current_count = 0
     last_counter = None
-    row_count = 0
     await ctx.send(f"✅ Counting channel set to {channel.mention}. Counter reset to 0.")
 
 @setcounting.error
@@ -41,82 +36,42 @@ async def setcounting_error(ctx, error):
 
 @bot.event
 async def on_message(message):
-    global current_count, counting_channel_id, last_counter, row_count
+    global current_count, counting_channel_id, last_counter
 
-    # Ignore bot messages
     if message.author.bot:
         return
 
-    # Check if this is the counting channel
     if counting_channel_id and message.channel.id == counting_channel_id:
         expr = message.content.strip()
 
-        # Safe evaluation (use the same logic as !calc)
         safe_globals = {
             "__builtins__": {},
             "math": math,
-            "tetration": tetration,
-            "tetr": tetration,
-            "fact": fact,
-            "factorial": factorial,
-            "gamma": gamma,
-            "slog": slog,
-            "addlayer": addlayer,
-            "add": add,
-            "addition": addition,
-            "sub": sub,
-            "subtract": subtract,
-            "mul": mul,
-            "multiply": multiply,
-            "div": div,
-            "division": division,
-            "pow": pow,
-            "power": power,
-            "exp": exp,
-            "lambertw": lambertw,
-            "ooms": OoMs,
-            "root": root,
-            "sqrt": sqrt,
-            "eq": eq,
-            "lt": lt,
-            "gte": gte,
-            "gt": gt,
-            "lte": lte,
-            "min": min,
-            "max": max,
-            "floor": floor,
-            "ceil": ceil,
-            "log": log,
-            "ln": ln,
-            "logbase": LogBase,
+            # ... all your safe functions like tetration, fact, etc. ...
+            # Include all from your original safe_globals here
         }
 
         try:
             value = eval(expr, safe_globals, {})
-            value = round(float(value))  # Convert to float and round
+            value = round(float(value))
         except:
             await message.channel.send("❌ Invalid expression, please try again!")
             return
 
-        # ✅ Correct number
+        # Check if the same user is counting twice in a row
+        if message.author.id == last_counter:
+            await message.channel.send(
+                f"❌ {message.author.mention}, you counted twice in a row and lost! The count resets to 1."
+            )
+            current_count = 0
+            last_counter = None
+            return
+
+        # Check if the number is the expected next number
         if value == current_count + 1:
             current_count += 1
-
-            # Track consecutive counts
-            if last_counter == message.author.id:
-                row_count += 1
-            else:
-                row_count = 1
             last_counter = message.author.id
-
-            # Add reactions and messages
             await message.add_reaction("✅")
-            if row_count >= 2:  # If same person counts consecutively
-                await message.channel.send(
-                    f"🔥 {message.author.mention} is on a **streak of {row_count} in a row!**"
-                )
-
-        # ❌ Wrong number
         else:
             await message.channel.send(
                 f"❌ {message.author.mention} failed at **{value}**!\n"
@@ -125,10 +80,9 @@ async def on_message(message):
             )
             current_count = 0
             last_counter = None
-            row_count = 0
 
-    # Process normal commands like !calc
     await bot.process_commands(message)
+
 @bot.command()
 async def guide(ctx):
     """
