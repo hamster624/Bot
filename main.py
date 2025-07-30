@@ -15,27 +15,33 @@ intents = discord.Intents.none()
 intents.guilds = True
 intents.messages = True
 intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
 counting_channel_id = None
 current_count = 0
-bot = commands.Bot(command_prefix='!', intents=intents)
+last_counter = None  # Track who counted last
+row_count = 0        # Track consecutive counts by the same user
+
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setcounting(ctx, channel: discord.TextChannel):
     """
     Set the channel where counting will happen (Admin Only).
     """
-    global counting_channel_id, current_count
+    global counting_channel_id, current_count, last_counter, row_count
     counting_channel_id = channel.id
     current_count = 0
+    last_counter = None
+    row_count = 0
     await ctx.send(f"✅ Counting channel set to {channel.mention}. Counter reset to 0.")
 
 @setcounting.error
 async def setcounting_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("❌ You need to be an **Administrator** to set the counting channel!")
+
 @bot.event
 async def on_message(message):
-    global current_count, counting_channel_id
+    global current_count, counting_channel_id, last_counter, row_count
 
     # Ignore bot messages
     if message.author.bot:
@@ -45,7 +51,7 @@ async def on_message(message):
     if counting_channel_id and message.channel.id == counting_channel_id:
         expr = message.content.strip()
 
-        # Use the same safe evaluation method as !calc
+        # Safe evaluation (use the same logic as !calc)
         safe_globals = {
             "__builtins__": {},
             "math": math,
@@ -92,18 +98,36 @@ async def on_message(message):
             await message.channel.send("❌ Invalid expression, please try again!")
             return
 
-        # Check if the next count is correct
+        # ✅ Correct number
         if value == current_count + 1:
             current_count += 1
+
+            # Track consecutive counts
+            if last_counter == message.author.id:
+                row_count += 1
+            else:
+                row_count = 1
+            last_counter = message.author.id
+
+            # Add reactions and messages
             await message.add_reaction("✅")
+            if row_count >= 2:  # If same person counts consecutively
+                await message.channel.send(
+                    f"🔥 {message.author.mention} is on a **streak of {row_count} in a row!**"
+                )
+
+        # ❌ Wrong number
         else:
             await message.channel.send(
                 f"❌ {message.author.mention} failed at **{value}**!\n"
-                f"➡ The next number should be **{current_count + 1}**.\n"
-                f"🔹 Last successful number: **{current_count}**"
+                f"➡ The next number is now **1**.\n"
+                f"🔹 Last successful number was **{current_count}**."
             )
+            current_count = 0
+            last_counter = None
+            row_count = 0
 
-    # Make sure other commands like !calc still work
+    # Process normal commands like !calc
     await bot.process_commands(message)
 @bot.command()
 async def guide(ctx):
