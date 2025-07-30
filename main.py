@@ -15,8 +15,96 @@ intents = discord.Intents.none()
 intents.guilds = True
 intents.messages = True
 intents.message_content = True
-
+counting_channel_id = None
+current_count = 0
 bot = commands.Bot(command_prefix='!', intents=intents)
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setcounting(ctx, channel: discord.TextChannel):
+    """
+    Set the channel where counting will happen (Admin Only).
+    """
+    global counting_channel_id, current_count
+    counting_channel_id = channel.id
+    current_count = 0
+    await ctx.send(f"✅ Counting channel set to {channel.mention}. Counter reset to 0.")
+
+@setcounting.error
+async def setcounting_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("❌ You need to be an **Administrator** to set the counting channel!")
+@bot.event
+async def on_message(message):
+    global current_count, counting_channel_id
+
+    # Ignore bot messages
+    if message.author.bot:
+        return
+
+    # Check if this is the counting channel
+    if counting_channel_id and message.channel.id == counting_channel_id:
+        expr = message.content.strip()
+
+        # Use the same safe evaluation method as !calc
+        safe_globals = {
+            "__builtins__": {},
+            "math": math,
+            "tetration": tetration,
+            "tetr": tetration,
+            "fact": fact,
+            "factorial": factorial,
+            "gamma": gamma,
+            "slog": slog,
+            "addlayer": addlayer,
+            "add": add,
+            "addition": addition,
+            "sub": sub,
+            "subtract": subtract,
+            "mul": mul,
+            "multiply": multiply,
+            "div": div,
+            "division": division,
+            "pow": pow,
+            "power": power,
+            "exp": exp,
+            "lambertw": lambertw,
+            "ooms": OoMs,
+            "root": root,
+            "sqrt": sqrt,
+            "eq": eq,
+            "lt": lt,
+            "gte": gte,
+            "gt": gt,
+            "lte": lte,
+            "min": min,
+            "max": max,
+            "floor": floor,
+            "ceil": ceil,
+            "log": log,
+            "ln": ln,
+            "logbase": LogBase,
+        }
+
+        try:
+            value = eval(expr, safe_globals, {})
+            value = round(float(value))  # Convert to float and round
+        except:
+            await message.channel.send("❌ Invalid expression, please try again!")
+            return
+
+        # Check if the next count is correct
+        if value == current_count + 1:
+            current_count += 1
+            await message.add_reaction("✅")
+        else:
+            await message.channel.send(
+                f"❌ {message.author.mention} failed at **{value}**!\n"
+                f"➡ The next number should be **{current_count + 1}**.\n"
+                f"🔹 Last successful number: **{current_count}**"
+            )
+
+    # Make sure other commands like !calc still work
+    await bot.process_commands(message)
 @bot.command()
 async def guide(ctx):
     """
