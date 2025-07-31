@@ -242,7 +242,7 @@ async def guide(ctx):
     help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower"
+    help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower`"
 
     await ctx.send(help_message)
 
