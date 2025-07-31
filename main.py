@@ -302,7 +302,7 @@ async def calc(ctx, *, expression: str):
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
-format_decimals = 6  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
+format_decimals = 16  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
 max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
 suffix_max= 1e308 # at how much of 10^x it adds scientific notation (max is 1e308)
 # --End of editable constants--
