@@ -222,11 +222,7 @@ async def guide(ctx):
 @bot.command()
 async def calc(ctx, *, expression: str):
     """
-    Evaluates a Break Eternity expression and formats it.
-    Tries eval first, if it fails, treats the input as string.
-    Example: !calc tetr(10,10)
-             !calc tetr(10,10) letter
-             !calc 12345
+    Evaluate an expression.
     """
     formats = {
         "format": format,
