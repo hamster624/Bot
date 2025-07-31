@@ -81,6 +81,33 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
 @bot.command()
 @commands.has_permissions(administrator=True)
+async def setcount(ctx, number: int):
+    """Set the current count manually for this server."""
+    guild_id = ctx.guild.id
+    guild_state = get_guild_state(guild_id)
+
+    if guild_state["counting_channel_id"] is None:
+        await ctx.send("⚠ No counting channel set! Use `!setcounting #channel` first.")
+        return
+
+    # Update the count but keep the same last_counter
+    set_guild_state(
+        guild_id,
+        guild_state["counting_channel_id"],
+        number,
+        guild_state["last_counter"]
+    )
+
+    await ctx.send(f"✅ Current count for {ctx.guild.name} has been set to **{number}**.")
+
+@setcount.error
+async def setcount_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("❌ You need to be an **Administrator** to set the count!")
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send("❌ Please provide a valid integer. Example: `!setcount 42`")
+@bot.command()
+@commands.has_permissions(administrator=True)
 async def setcounting(ctx, channel: discord.TextChannel):
     """Set the channel for counting and reset the count."""
     guild_id = ctx.guild.id
