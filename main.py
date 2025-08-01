@@ -1164,6 +1164,7 @@ def div(a, b): return division(a, b)
 
 # Formats
 def hyper_e(tet, decimals=format_decimals):
+    tet = correct(tet)
     if isinstance(tet, (int, float)):
         return comma_format(tet, decimals)
     tet_str = str(tet)
@@ -1195,6 +1196,7 @@ def hyper_e(tet, decimals=format_decimals):
     return tet_str
 
 def format(tet, decimals=format_decimals):
+    tet = correct(tet)
     if isinstance(tet, (int, float)):
         return comma_format(tet, decimals)
     tet_str = tet
