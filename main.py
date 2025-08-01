@@ -182,6 +182,7 @@ async def on_message(message):
             "log": log,
             "ln": ln,
             "logbase": LogBase,
+            "log": log
         }
         try:
             value = eval(first_token, safe_globals, {})
