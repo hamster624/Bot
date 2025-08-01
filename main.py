@@ -306,6 +306,7 @@ async def calc(ctx, *, expression: str):
             "log": log,
             "ln": ln,
             "logbase": LogBase,
+            "log": log
         }
 
         start_time = time.time()
