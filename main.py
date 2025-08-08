@@ -1814,7 +1814,9 @@ def format_float_scientific(x: float, sig_digits: int = 16) -> str:
     mant_str = f"{mant:.{sig_digits}g}".rstrip('0').rstrip('.')
     return f"{mant_str}e{exp}"
 
-def correct(x):  
+def correct(x):
+    if not isinstance(x, (int, float)):
+        x = str(x).replace(",", "").strip()
     if isinstance(x, (int, float)):  
         return x  
     x = str(x)  
@@ -1930,7 +1932,3 @@ def parse_suffix(s: str) -> int:
     return f"Unrecognized suffix: {s}"
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
-
-
-
-
