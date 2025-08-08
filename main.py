@@ -301,8 +301,6 @@ async def on_message(message):
 
             "lambertw": lambertw,
 
-            "ooms": OoMs,
-
             "root": root,
 
             "sqrt": sqrt,
@@ -329,7 +327,7 @@ async def on_message(message):
 
             "ln": ln,
 
-            "logbase": LogBase,
+            "logbase": logbase,
 
             "log": log
 
@@ -433,7 +431,7 @@ async def guide(ctx):
 
         "log", "ln", "logbase", "slog", "lambertw",
 
-        "fact (factorial)", "gamma", "OoMs",
+        "fact (factorial)", "gamma",
 
         "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
 
@@ -576,7 +574,7 @@ async def calc(ctx, *, expression: str):
 
             "ln": ln,
 
-            "logbase": LogBase,
+            "logbase": logbase,
 
             "log": log
 
@@ -1932,5 +1930,6 @@ def parse_suffix(s: str) -> int:
     return f"Unrecognized suffix: {s}"
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
 
 
