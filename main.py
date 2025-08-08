@@ -621,7 +621,7 @@ async def calc(ctx, *, expression: str):
 
     except Exception as e:
 
-        await ctx.reply(f"Error, do !guide for help", mention_author=False)
+        await ctx.reply(f"Error: `{e}`", mention_author=False)
 
 import math
 # --Editable constants--
@@ -1933,3 +1933,4 @@ def parse_suffix(s: str) -> int:
     return f"Unrecognized suffix: {s}"
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
