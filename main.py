@@ -549,7 +549,6 @@ async def calc(ctx, *, expression: str):
 
             "lambertw": lambertw,
 
-            "ooms": OoMs,
 
             "root": root,
 
@@ -1933,4 +1932,5 @@ def parse_suffix(s: str) -> int:
     return f"Unrecognized suffix: {s}"
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
 
