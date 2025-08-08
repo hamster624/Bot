@@ -9,11 +9,10 @@ from flask import Flask
 from threading import Thread
 
 app = Flask('')
-
 @app.route('/')
+
 def home():
     return "I'm alive"
-
 def run():
     app.run(host='0.0.0.0', port=8080)
 
@@ -21,318 +20,614 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 keep_alive()
+
 # ---------------------
 # Bot Setup
 # ---------------------
+
 load_dotenv()
+
 token = os.getenv('DISCORD_TOKEN')
-
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
-
 intents = discord.Intents.default()
 intents.guilds = True
 intents.messages = True
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+
+
 STATE_FILE = "counting_state.json"
+
 state = {}
 
+
+
 # ---------------------
+
 # State Management
+
 # ---------------------
+
 def save_state():
+
     """Save the current counting state to disk."""
+
     with open(STATE_FILE, "w") as f:
+
         json.dump(state, f)
 
+
+
 def load_state():
+
     """Load the counting state from disk."""
+
     global state
+
     try:
+
         with open(STATE_FILE, "r") as f:
+
             state = json.load(f)
+
     except FileNotFoundError:
+
         state = {}
 
+
+
 def get_guild_state(guild_id):
+
     """Get the state for a specific guild, or default if missing."""
+
     return state.get(str(guild_id), {
+
         "counting_channel_id": None,
+
         "current_count": 0,
+
         "last_counter": None
+
     })
 
+
+
 def set_guild_state(guild_id, counting_channel_id, current_count, last_counter):
+
     """Update the guild state and save to file."""
+
     state[str(guild_id)] = {
+
         "counting_channel_id": counting_channel_id,
+
         "current_count": current_count,
+
         "last_counter": last_counter
+
     }
+
     save_state()
 
+
+
 # ---------------------
+
 # Bot Events
+
 # ---------------------
+
 @bot.event
+
 async def on_ready():
+
     load_state()
+
     print(f"✅ Logged in as {bot.user}")
+
 @bot.command()
+
 @commands.has_permissions(administrator=True)
+
 async def setcount(ctx, number: int):
+
     """Set the current count manually for this server."""
+
     guild_id = ctx.guild.id
+
     guild_state = get_guild_state(guild_id)
 
+
+
     if guild_state["counting_channel_id"] is None:
+
         await ctx.send("⚠ No counting channel set! Use `!setcounting #channel` first.")
+
         return
 
+
+
     # Update the count but keep the same last_counter
+
     set_guild_state(
+
         guild_id,
+
         guild_state["counting_channel_id"],
+
         number,
+
         guild_state["last_counter"]
+
     )
+
+
 
     await ctx.send(f"✅ Current count for {ctx.guild.name} has been set to **{number}**.")
 
+
+
 @setcount.error
+
 async def setcount_error(ctx, error):
+
     if isinstance(error, commands.MissingPermissions):
+
         await ctx.send("❌ You need to be an **Administrator** to set the count!")
+
     elif isinstance(error, commands.BadArgument):
+
         await ctx.send("❌ Please provide a valid integer. Example: `!setcount 42`")
+
 @bot.command()
+
 @commands.has_permissions(administrator=True)
+
 async def setcounting(ctx, channel: discord.TextChannel):
+
     """Set the channel for counting and reset the count."""
+
     guild_id = ctx.guild.id
+
     set_guild_state(guild_id, channel.id, 0, None)
+
     await ctx.send(f"✅ Counting channel set to {channel.mention}. Counter reset to 0.")
 
+
+
 @setcounting.error
+
 async def setcounting_error(ctx, error):
+
     if isinstance(error, commands.MissingPermissions):
+
         await ctx.send("❌ You need to be an **Administrator** to set the counting channel!")
 
+
+
 @bot.command()
+
 async def current(ctx):
+
     """Show the current count for this server."""
+
     guild_state = get_guild_state(ctx.guild.id)
+
     await ctx.send(
+
         f"🔹 Current count: **{guild_state['current_count']}**\n"
+
         f"📢 Channel: <#{guild_state['counting_channel_id']}>"
+
         if guild_state['counting_channel_id'] else "⚠ No counting channel set!"
+
     )
+
 @bot.event
+
 async def on_message(message):
+
     if message.author.bot or not message.guild:
+
         return
 
+
+
     guild_id = message.guild.id
+
     guild_state = get_guild_state(guild_id)
+
     counting_channel_id = guild_state['counting_channel_id']
+
     current_count = guild_state['current_count']
+
     last_counter = guild_state['last_counter']
 
+
+
     if counting_channel_id and message.channel.id == counting_channel_id:
+
         content = message.content.strip()
+
         if not content:
+
             return
+
+
 
         first_token = content.split()[0]
+
         safe_globals = {
+
             "__builtins__": {},
+
             "math": math,
+
             "tetration": tetration,
+
             "tetr": tetration,
+
             "fact": fact,
+
             "factorial": factorial,
+
             "gamma": gamma,
+
             "slog": slog,
+
             "addlayer": addlayer,
+
             "add": add,
+
             "addition": addition,
+
             "sub": sub,
+
             "subtract": subtract,
+
             "mul": mul,
+
             "multiply": multiply,
+
             "div": div,
+
             "division": division,
+
             "pow": pow,
+
             "power": power,
+
             "exp": exp,
+
             "lambertw": lambertw,
+
             "ooms": OoMs,
+
             "root": root,
+
             "sqrt": sqrt,
+
             "eq": eq,
+
             "lt": lt,
+
             "gte": gte,
+
             "gt": gt,
+
             "lte": lte,
+
             "min": min,
+
             "max": max,
+
             "floor": floor,
+
             "ceil": ceil,
+
             "log": log,
+
             "ln": ln,
+
             "logbase": LogBase,
+
             "log": log
+
         }
+
         try:
+
             value = eval(first_token, safe_globals, {})
+
             value = round(float(value))
+
         except Exception:
+
             # If the expression is invalid or unsupported, ignore the message
+
             return
+
+
 
         if message.author.id == last_counter:
+
             await message.channel.send(
+
                 f"❌ {message.author.mention}, you counted twice in a row and lost! The count resets to 1."
+
             )
+
             current_count = 0
+
             last_counter = None
+
             set_guild_state(guild_id, counting_channel_id, current_count, last_counter)
+
             return
 
+
+
         if value == current_count + 1:
+
             current_count += 1
+
             last_counter = message.author.id
+
             await message.add_reaction("✅")
+
         else:
+
             await message.channel.send(
+
                 f"❌ {message.author.mention} failed!\n"
+
                 f"➡ The next number is now **1**.\n"
+
                 f"🔹 Last successful number was **{current_count}**."
+
             )
+
             current_count = 0
+
             last_counter = None
+
+
 
         set_guild_state(guild_id, counting_channel_id, current_count, last_counter)
 
+
+
     await bot.process_commands(message)
+
 @bot.command()
+
 async def guide(ctx):
+
     """
+
     Displays all available operations and notations for the !calc command.
+
     """
+
     formats = [
+
         "format",
+
         "power10_tower",
+
         "correct",
+
         "hyper_e",
+
         "letter",
+
         "suffix_to_scientific"
+
     ]
 
+
+
     operations = [
+
         "tetration (tetr)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+
         "log", "ln", "logbase", "slog", "lambertw",
+
         "fact (factorial)", "gamma", "OoMs",
+
         "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
+
         "eq", "lt", "gt", "gte", "lte", "min", "max",
+
         "floor", "ceil"
+
      ]
 
 
+
+
+
     help_message = "**📘 !calc Help**\n\n"
+
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
+
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
+
     help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower`"
+
+
 
     await ctx.send(help_message)
 
+
+
 @bot.command()
+
 async def calc(ctx, *, expression: str):
+
     """
+
     Evaluate an expression.
+
     """
+
     formats = {
+
         "format": format,
+
         "power10_tower": power10_tower,
+
         "correct": correct,
+
         "hyper_e": hyper_e,
+
         "letter": letter,
+
         "suffix_to_scientific": suffix_to_scientific,
+
     }
 
+
+
     try:
+
         tokens = expression.strip().split(" ")
+
         fmt_name = "format"
+
         if tokens[-1].lower() in formats:
+
             fmt_name = tokens[-1].lower()
+
             tokens = tokens[:-1]
 
+
+
         expr = " ".join(tokens)
+
         safe_globals = {
+
             "__builtins__": {},
+
             "math": math,
+
             "tetration": tetration,
+
             "tetr": tetration,
+
             "fact": fact,
+
             "factorial": factorial,
+
             "gamma": gamma,
+
             "slog": slog,
+
             "addlayer": addlayer,
+
             "add": add,
+
             "addition": addition,
+
             "sub": sub,
+
             "subtract": subtract,
+
             "mul": mul,
+
             "multiply": multiply,
+
             "div": div,
+
             "division": division,
+
             "pow": pow,
+
             "power": power,
+
             "exp": exp,
+
             "lambertw": lambertw,
+
             "ooms": OoMs,
+
             "root": root,
+
             "sqrt": sqrt,
+
             "eq": eq,
+
             "lt": lt,
+
             "gte": gte,
+
             "gt": gt,
+
             "lte": lte,
+
             "min": min,
+
             "max": max,
+
             "floor": floor,
+
             "ceil": ceil,
+
             "log": log,
+
             "ln": ln,
+
             "logbase": LogBase,
+
             "log": log
+
         }
+
+
 
         start_time = time.time()
 
+
+
         try:
+
             value = eval(expr, safe_globals, {})
+
         except:
+
             value = expr
+
+
 
         result = formats[fmt_name](value)
 
+
+
         end_time = time.time()
+
         elapsed = end_time - start_time
 
+
+
         await ctx.reply(
+
             f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds",
+
             mention_author=False
+
         )
 
+
+
     except Exception as e:
+
         await ctx.reply(f"Error, do !guide for help", mention_author=False)
+
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
-format_decimals = 16  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
-max_layer = 100  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
+format_decimals = 6  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
+max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
 suffix_max= 1e308 # at how much of 10^x it adds scientific notation (max is 1e308)
 # --End of editable constants--
 
@@ -409,23 +704,23 @@ def tetration(a, h):
     try:
         h_float = float(h)
     except (TypeError, ValueError):
-        return "Error: Tetration height must be a valid number below 1e308"
-
+        return "Error: Tetration height must be a valid number"
+    
     sign_a, abs_a = get_sign_and_abs(a)
     if sign_a == -1:
         return "Error: Tetration base must be non-negative"
-
+    
     a_val = abs_a
-
+    
     if h_float < 0:
         return "Error: Tetration height must be non-negative"
-
+    
     try:
         a_float = float(a_val)
         use_float = True
     except (TypeError, ValueError):
         use_float = False
-
+        
     if not use_float:
         if isinstance(a_val, str):
             s = slog(a_val)
@@ -437,7 +732,7 @@ def tetration(a, h):
                 return "NaN"
         else:
             return "NaN"
-
+    
     a_float = float(a_val)
     if a_float < 0:
         return "Error: Tetration base must be non-negative"
@@ -447,22 +742,22 @@ def tetration(a, h):
         return "0" if h_float % 2 == 0 else ("1" if h_float == 1 else "0")
     if a_float == 1:
         return "1"
-
+    
     if h_float >= LARGE_HEIGHT_THRESHOLD:
         if abs(h_float - round(h_float)) < 1e-12:
             height_str = format_int_scientific(int(round(h_float)))
         else:
             height_str = format_float_scientific(h_float)
         return f"10^^{height_str}"
-
+    
     log10a = math.log10(a_float) if a_float > 0 else -float('inf')
     log_log10a = math.log10(log10a) if log10a > 0 else -float('inf')
-
+    
     try:
         n = math.floor(h_float)
     except (ValueError, TypeError, OverflowError):
         return "NaN"
-
+    
     f = h_float - n
     current = a_float ** f if f > 0 else 1.0
     layer = 0
@@ -472,7 +767,7 @@ def tetration(a, h):
         if abs(current - round(current)) < 1e-10:
             return format_float_scientific(round(current))
         return f"{current:.15g}"
-
+    
     n_remaining = int(n)
     layer0_iter = 0
     prev_current = current
@@ -502,12 +797,12 @@ def tetration(a, h):
         else:
             layer += n_remaining
             n_remaining = 0
-
+    
     if layer >= 1 and math.isfinite(current) and current > LARGE_HEIGHT_THRESHOLD:
         while current > LARGE_HEIGHT_THRESHOLD:
             current = math.log10(current)
             layer += 1
-
+    
     if layer == 0:
         if current < 1e12:
             return current
@@ -530,15 +825,15 @@ def slog_numeric(x, base):
     if sign_x == -1:
         return float('nan')
     x = abs_x
-
+    
     try:
         x_val = float(x)
     except (TypeError, ValueError):
         return float('nan')
-
+    
     if x_val <= 0:
         return float('-inf')
-
+    
     count = 0.0
     current = x_val
     while current < 1:
@@ -555,7 +850,7 @@ def slog_numeric(x, base):
         except (OverflowError, ValueError):
             return float('nan')
         count += 1
-
+    
     try:
         frac = math.log(current, base)
     except (OverflowError, ValueError):
@@ -567,10 +862,10 @@ def slog(x, base=10):
     if sign_x == -1:
         return "Error: x can't be a negative number"
     x = abs_x
-
+    
     if x == 0:
         return -1
-
+    
     if isinstance(x, str):
         if base == 10:
             if x.startswith("10^^"):
@@ -655,11 +950,12 @@ def slog(x, base=10):
         return slog_numeric(x, base)
 
 def log(x):
+    x = correct(x)
     sign_x, abs_x = get_sign_and_abs(x)
     if sign_x == -1:
         return "Error: Logarithm of negative number"
     x = abs_x
-
+    
     if isinstance(x, str):
         if x == "NaN" or x.startswith("Error:"):
             return x
@@ -708,11 +1004,14 @@ def log(x):
         except:
             return "NaN"
 
-def LogBase(x,y):
-    return div(log(x),log(y))
+def logbase(a,b):
+	a, b = correct(a), correct(b)
+	return div(log(a),log(b))
 def ln(x):
-    return mul(log(x),2.302585092994046)
+	x=correct(x)
+	return mul(log(x),2.302585092994046)
 def addlayer(a, b=1):
+    a, b = correct(a), correct(b)
     s = slog(a)
     try:
         if math.isinf(s) or math.isnan(s) or isinstance(s, str):
@@ -732,6 +1031,7 @@ def is_float_convertible(x):
         return False
 
 def subtract_positive(a, b, depth=0):
+    a, b = correct(a), correct(b)
     MAX_DEPTH = 3
     if depth > MAX_DEPTH:
         return a
@@ -750,13 +1050,13 @@ def subtract_positive(a, b, depth=0):
         if abs(result) < 1e-3 or abs(result) >= 1e12:
             return format_float_scientific(result)
         return str(result)
-
+    
     if lt(a, b) == True:
         return negate(subtract_positive(b, a, depth+1))
-
+    
     if eq(a, b) == True:
         return 0
-
+    
     if isinstance(a, str) and a.startswith('e') and is_float_convertible(b):
         try:
             exponent = float(a[1:])
@@ -778,11 +1078,11 @@ def subtract_positive(a, b, depth=0):
     B = log(b)
     if A == "NaN" or B == "NaN" or A == "Error: Logarithm of negative number" or B == "Error: Logarithm of negative number":
         return a
-
+    
     D = subtract_positive(A, B, depth+1)
     if D == "NaN" or D == "Error: Logarithm of negative number":
         return a
-
+    
     try:
         D_float = float(D)
         if D_float > 1000:
@@ -798,6 +1098,7 @@ def subtract_positive(a, b, depth=0):
         return a
 
 def add_positive(a, b):
+    a, b = correct(a), correct(b)
     if a in [0, "0"]:
         return b
     if b in [0, "0"]:
@@ -810,7 +1111,7 @@ def add_positive(a, b):
             return result
         elif abs(result) >= 1e308:
             return format_float_scientific(result)
-
+    
     s_a = slog(a)
     s_b = slog(b)
     if math.isnan(s_a) or math.isnan(s_b) or isinstance(s_a, str) or isinstance(s_b, str):
@@ -827,7 +1128,7 @@ def add_positive(a, b):
     if gt(b, a) == True:
         a, b = b, a
         s_a, s_b = s_b, s_a
-
+    
     log_a = log(a)
     log_b = log(b)
     try:
@@ -838,16 +1139,16 @@ def add_positive(a, b):
             d_val = float(d_exp) if is_float_convertible(d_exp) else -float('inf')
     except:
         d_val = -float('inf')
-
+    
     if d_val < MIN_EXPONENT:
         return a
-
+    
     try:
         x = 10.0 ** d_val
         y = math.log10(1 + x)
     except:
         return a
-
+    
     if is_float_convertible(log_a):
         new_exponent = float(log_a) + y
     else:
@@ -855,10 +1156,11 @@ def add_positive(a, b):
             new_exponent = addition(log_a, y)
         except:
             return a
-
+    
     return addlayer(new_exponent)
 
 def addition(a, b):
+    a, b = correct(a), correct(b)
     try:
         a_float = float(a)
         b_float = float(b)
@@ -866,21 +1168,21 @@ def addition(a, b):
             return a_float + b_float
     except (ValueError, TypeError, OverflowError):
         pass
-
+    
     sign_a, abs_a = get_sign_and_abs(a)
     sign_b, abs_b = get_sign_and_abs(b)
-
+    
     if abs_a in [0, "0"] and abs_b in [0, "0"]:
         return 0
     if abs_a in [0, "0"]:
         return apply_sign(abs_b, sign_b)
     if abs_b in [0, "0"]:
         return apply_sign(abs_a, sign_a)
-
+    
     if sign_a == sign_b:
         result = add_positive(abs_a, abs_b)
         return apply_sign(result, sign_a)
-
+    
     cmp = compare_positive(abs_a, abs_b)
     if cmp == 0:
         return 0
@@ -892,13 +1194,15 @@ def addition(a, b):
         return apply_sign(result, sign_b)
 
 def subtract(a, b):
+    a, b = correct(a), correct(b)
     return addition(a, negate(b))
 
 def multiply(a, b):
+    a, b = correct(a), correct(b)
     sign_a, abs_a = get_sign_and_abs(a)
     sign_b, abs_b = get_sign_and_abs(b)
     sign = sign_a * sign_b
-
+    
     if abs_a in [0, "0"] or abs_b in [0, "0"]:
         return 0
 
@@ -916,7 +1220,7 @@ def multiply(a, b):
         log_b = log(abs_b)
         if log_a == "Error: Logarithm of negative number" or log_b == "Error: Logarithm of negative number":
             return "Error: Logarithm of negative number"
-
+        
         log_product = addition(log_a, log_b)
         product = addlayer(log_product)
         return apply_sign(product, sign)
@@ -924,10 +1228,11 @@ def multiply(a, b):
         return "Error doing multiplication"
 
 def division(a, b):
+    a, b = correct(a), correct(b)
     sign_a, abs_a = get_sign_and_abs(a)
     sign_b, abs_b = get_sign_and_abs(b)
     sign = sign_a * sign_b
-
+    
     if abs_b in [0, "0"]:
         return "Error: Division by zero"
     if abs_a in [0, "0"]:
@@ -947,7 +1252,7 @@ def division(a, b):
         log_b = log(abs_b)
         if log_a == "Error: Logarithm of negative number" or log_b == "Error: Logarithm of negative number":
             return "Error: Logarithm of negative number"
-
+        
         log_quotient = subtract(log_a, log_b)
         quotient = addlayer(log_quotient)
         return apply_sign(quotient, sign)
@@ -955,6 +1260,7 @@ def division(a, b):
         return "Error doing division"
 
 def power(a, b):
+    a, b = correct(a), correct(b)
     sign_a, abs_a = get_sign_and_abs(a)
 
     if sign_a == -1:
@@ -974,34 +1280,38 @@ def power(a, b):
         log_a = log(abs_a)
         if log_a == "Error: Logarithm of negative number":
             return "Error: Logarithm of negative number"
-
+        
         log_power = multiply(log_a, b)
         result = addlayer(log_power)
         return result
     except:
         return "Error doing power"
-
+ 
 def exp(x):
-    return pow(2.7182818284590452,x)
+	x=correct(x)
+	return pow(2.7182818284590452,x)
 
 def root(a, b):
+    a, b = correct(a), correct(b)
     if b == 0:
         return "Error: Root of order 0"
     return power(a, division(1, b))
 
 def sqrt(x):
+    x=correct(x)
     return root(x, 2)
 
 def factorial(n):
+    n= correct(n)
     sign, abs_n = get_sign_and_abs(n)
     if sign == -1:
         return "Factorial can't be negative"
-
+    
     try:
         n_val = float(abs_n)
     except (TypeError, OverflowError, ValueError):
         n_val = str(abs_n)
-
+    
     if n_val == 0:
         return 1
 
@@ -1017,27 +1327,31 @@ def factorial(n):
         term2 = negate(multiply(n_val, 0.4342944819032518))
         total_log = addition(addition(term1, term2), 0.3990899341790575)
         return addlayer(total_log)
-
+ 
 def gamma(x):
-    return fact(sub(x,1))
+	x = correct(x)
+	return fact(sub(x,1))
 
 def floor(x):
-    try:
-        math.floor(x)
-    except:
-        return x
+	x= correct(x)
+	try:
+		math.floor(x)
+	except:
+		return x
 
 def ceil(x):
-    try:
-        math.ceil(x)
-    except:
-        return x
+	x = correct(x)
+	try:
+		math.ceil(x)
+	except:
+		return x
 
 def lambertw(z):
+    z = correct(z)
     if lte(z, 0):
         raise ValueError("Asymptotic expansion valid only for positive z >> 1")
     elif gte(z,"ee6"):
-        return mul(log(z), 2.302585092994046)
+	    return mul(log(z), 2.302585092994046)
     L1 = log(z)
     L2 = log(L1)
 
@@ -1050,30 +1364,15 @@ def lambertw(z):
     part2 = add(termC, termD)
 
     return add(part1, part2)
-
-def OoMs(start, end, time=1):
-    if gt(start, end): 
-        return("OoMs error: start for the OoMs cant be more than the end")
-    slg_end = slog(end)
-    slg_start = slog(start)
-    slg_fl_start = math.floor(slg_start)
-    slg_fl_end = math.floor(slg_end)
-    x = (tetr(10, slg_end-(slg_fl_end-1)) - tetr(10, slg_start-(slg_fl_start-1))) / time
-    if x < 1 and slg_fl_end-2 < 0:
-        y = slg_fl_end-2
-        x = round(10**x, 6)
-    else:
-        y = slg_fl_end-1
-        x = round(x, 6)
-    return f"{x} OoMs^{y}"
 # Comparisons
 def gt(a, b):
+    a, b = correct(a), correct(b)
     sign_a, abs_a = get_sign_and_abs(a)
     sign_b, abs_b = get_sign_and_abs(b)
-
+    
     if sign_a != sign_b:
         return sign_a > sign_b
-
+    
     if sign_a == 1:
         a_slog = slog(abs_a)
         b_slog = slog(abs_b)
@@ -1082,7 +1381,7 @@ def gt(a, b):
                 return False
         except:
             return False
-
+        
         if a_slog > b_slog:
             return True
         elif a_slog < b_slog:
@@ -1108,51 +1407,57 @@ def gt(a, b):
                 return False
 
 def lt(a, b):
+    a, b = correct(a), correct(b)
     return gt(b, a)
 
 def eq(a, b):
+    a, b = correct(a), correct(b)
     sign_a, abs_a = get_sign_and_abs(a)
     sign_b, abs_b = get_sign_and_abs(b)
-
+    
     if sign_a != sign_b:
         return False
-
+    
     try:
         a_slog = slog(abs_a)
         b_slog = slog(abs_b)
     except:
         return False
-
+    
     try:
         if math.isnan(a_slog) or math.isnan(b_slog) or isinstance(a_slog, str) or isinstance(b_slog, str):
             return False
     except:
         return False
-
+    
     if abs(a_slog - b_slog) > 1e-10:
         return False
-
+    
     if is_float_convertible(abs_a) and is_float_convertible(abs_b):
         return abs(float(abs_a) - float(abs_b)) < 1e-10
     return True
 
 def gte(a, b):
+    a, b = correct(a), correct(b)
     return not lt(a, b)
 
 def lte(a, b):
+    a, b = correct(a), correct(b)
     return not gt(a, b)
 
 def max(a,b):
-    if gte(a,b):
-        return a
-    else:
-        return b
+	a, b = correct(a), correct(b)
+	if gte(a,b):
+		return a
+	else:
+		return b
 
 def min(a,b):
-    if lte(a,b):
-        return a
-    else:
-        return b
+	a, b = correct(a), correct(b)
+	if lte(a,b):
+		return a
+	else:
+		return b
 # Short names
 def fact(x): return factorial(x)
 def pow(a, b): return power(a, b)
@@ -1196,7 +1501,7 @@ def hyper_e(tet, decimals=format_decimals):
     return tet_str
 
 def format(tet, decimals=format_decimals):
-    tet = correct(tet)
+    s = correct(s)
     if isinstance(tet, (int, float)):
         return comma_format(tet, decimals)
     tet_str = tet
@@ -1249,6 +1554,7 @@ def format(tet, decimals=format_decimals):
     return tet_str
 
 def power10_tower(tet, max_layers=max_layer, decimals=format_decimals):
+    s = correct(s)
     s = slog(tet)
     if math.isnan(s) or math.isinf(s) or isinstance(s, str):
         return "NaN"
@@ -1265,6 +1571,7 @@ def power10_tower(tet, max_layers=max_layer, decimals=format_decimals):
     return expr
 
 def letter(s: str) -> str:
+    s =correct(s)
     try:
         s = format_float_scientific(s)
     except:
@@ -1336,7 +1643,7 @@ def letter(s: str) -> str:
     while k < len(s) and s[k] == 'e':
         k += 1
     rest = s[k:]
-
+    
     if k == 0: 
         return s
     try:
@@ -1448,7 +1755,7 @@ def suffix_to_scientific(input_str: str) -> str:
         except:
             mantissa_val = 1.0
             suffix_str = input_str
-
+    
     additional_exponent = 0
     if suffix_str:
         try:
@@ -1456,17 +1763,17 @@ def suffix_to_scientific(input_str: str) -> str:
             additional_exponent = 3 * (n + 1)
         except Exception as e:
             additional_exponent = 0
-
+    
     if mantissa_val == 0:
         return "0"
-
+    
     try:
         k = math.floor(math.log10(abs(mantissa_val)))
     except:
         k = 0
     total_exponent = k + additional_exponent
     new_mantissa = mantissa_val / (10 ** k)
-
+    
     if abs(new_mantissa - round(new_mantissa)) < 1e-5:
         mantissa_output = str(int(round(new_mantissa)))
     else:
@@ -1474,7 +1781,7 @@ def suffix_to_scientific(input_str: str) -> str:
         if '.' in formatted:
             formatted = formatted.rstrip('0').rstrip('.')
         mantissa_output = formatted
-
+    
     if mantissa_output == "1":
         return "e" + str(int(total_exponent))
     else:
@@ -1510,9 +1817,33 @@ def format_float_scientific(x: float, sig_digits: int = 16) -> str:
     mant_str = f"{mant:.{sig_digits}g}".rstrip('0').rstrip('.')
     return f"{mant_str}e{exp}"
 
-def correct(x):
+def correct(x):  
+    if isinstance(x, (int, float)):  
+        return x  
+    x = str(x)  
+    if isinstance(x, str):  
+        x = x.strip()  
+        if "F" in x:  
+            f_index = x.find("F")  
+            if f_index > 0:  
+                before_f = x[:f_index]  
+                after_f = x[f_index+1:]      
+                try:  
+                    base = float(before_f)  
+                    exp = float(after_f)  
+                    x = "10^^" + str(exp + math.log10(base))  
+                except ValueError:  
+                    if x.startswith("F"):  
+                        x = "10^^" + x[1:]  
+            elif x.startswith("F"):  
+                try:  
+                    height = float(x[1:])  
+                    return tetr(10, height)  
+                except ValueError:  
+                    pass  
+        if tetr(10, slog(x)) == "NaN":  
+            return suffix_to_scientific(x)  
     return tetr(10, slog(x))
-
 def fix_letter_output(s):
     cleaned = ''.join(c for c in s if c not in '()')
     e_count = 0
@@ -1535,7 +1866,7 @@ def get_short_scale_suffix(n: int) -> str:
         tens = (n % 100) // 10
         units = n % 10
         return FirstOnes[units] + SecondOnes[tens] + ThirdOnes[hundreds]
-
+    
     for i in range(len(MultOnes)-1, 0, -1):
         magnitude = 1000 ** i
         if n < magnitude:
@@ -1546,10 +1877,10 @@ def get_short_scale_suffix(n: int) -> str:
             count_str = ""
         else:
             count_str = get_short_scale_suffix(count)
-
+            
         rem_str = get_short_scale_suffix(remainder) if remainder > 0 else ""
         return count_str + MultOnes[i] + rem_str
-
+    
     return ""
 base_map = {}
 for hundreds in range(0, 10):
@@ -1599,5 +1930,6 @@ def parse_suffix(s: str) -> int:
                     return result
                 except:
                     continue
-    raise ValueError(f"Unrecognized suffix: {s}")
+    return f"Unrecognized suffix: {s}"
+
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
