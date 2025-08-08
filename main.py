@@ -1498,7 +1498,7 @@ def hyper_e(tet, decimals=format_decimals):
     return tet_str
 
 def format(tet, decimals=format_decimals):
-    s = correct(s)
+    tet = correct(tet)
     if isinstance(tet, (int, float)):
         return comma_format(tet, decimals)
     tet_str = tet
@@ -1551,7 +1551,7 @@ def format(tet, decimals=format_decimals):
     return tet_str
 
 def power10_tower(tet, max_layers=max_layer, decimals=format_decimals):
-    s = correct(s)
+    tet = correct(tet)
     s = slog(tet)
     if math.isnan(s) or math.isinf(s) or isinstance(s, str):
         return "NaN"
@@ -1930,6 +1930,7 @@ def parse_suffix(s: str) -> int:
     return f"Unrecognized suffix: {s}"
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
 
 
 
