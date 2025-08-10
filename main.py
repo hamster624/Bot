@@ -35,8 +35,6 @@ intents.messages = True
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-
-
 STATE_FILE = "counting_state.json"
 
 state = {}
@@ -50,122 +48,68 @@ state = {}
 # ---------------------
 
 def save_state():
-
     """Save the current counting state to disk."""
-
     with open(STATE_FILE, "w") as f:
-
         json.dump(state, f)
 
 
 
 def load_state():
-
     """Load the counting state from disk."""
-
     global state
-
     try:
-
         with open(STATE_FILE, "r") as f:
-
             state = json.load(f)
-
     except FileNotFoundError:
-
         state = {}
 
 
 
 def get_guild_state(guild_id):
-
     """Get the state for a specific guild, or default if missing."""
-
     return state.get(str(guild_id), {
-
         "counting_channel_id": None,
-
         "current_count": 0,
-
         "last_counter": None
-
     })
 
 
 
 def set_guild_state(guild_id, counting_channel_id, current_count, last_counter):
-
     """Update the guild state and save to file."""
-
     state[str(guild_id)] = {
-
         "counting_channel_id": counting_channel_id,
-
         "current_count": current_count,
-
         "last_counter": last_counter
-
     }
-
     save_state()
 
-
-
 # ---------------------
-
 # Bot Events
-
 # ---------------------
 
 @bot.event
 
 async def on_ready():
-
     load_state()
-
     print(f"✅ Logged in as {bot.user}")
 
 @bot.command()
-
 @commands.has_permissions(administrator=True)
-
 async def setcount(ctx, number: int):
-
     """Set the current count manually for this server."""
-
     guild_id = ctx.guild.id
-
     guild_state = get_guild_state(guild_id)
-
-
-
     if guild_state["counting_channel_id"] is None:
-
         await ctx.send("⚠ No counting channel set! Use `!setcounting #channel` first.")
-
         return
-
-
-
-    # Update the count but keep the same last_counter
-
     set_guild_state(
-
         guild_id,
-
         guild_state["counting_channel_id"],
-
         number,
-
         guild_state["last_counter"]
-
     )
-
-
-
     await ctx.send(f"✅ Current count for {ctx.guild.name} has been set to **{number}**.")
-
-
 
 @setcount.error
 
@@ -1347,10 +1291,11 @@ def lambertw(z):
     z = correct(z)
     if lte(z, 0):
         raise ValueError("Asymptotic expansion valid only for positive z >> 1")
-    elif gte(z,"ee6"):
-	    return mul(log(z), 2.302585092994046)
-    L1 = log(z)
-    L2 = log(L1)
+    elif gte(z, "ee6"):
+        return mul(log(z), 2.302585092994046)
+
+    L1 = ln(z)
+    L2 = ln(L1)
 
     termC = div(L2, L1)
     numeratorD = mul(L2, sub(-2, L2))
@@ -1361,6 +1306,22 @@ def lambertw(z):
     part2 = add(termC, termD)
 
     return add(part1, part2)
+
+def OoMs(start, end, time=1):
+    if gt(start, end): 
+        raise ValueError("OoMs error: start for the OoMs cant be more than the end")
+    slg_end = slog(end)
+    slg_start = slog(start)
+    slg_fl_start = math.floor(slg_start)
+    slg_fl_end = math.floor(slg_end)
+    x = (tetr(10, slg_end-(slg_fl_end-1)) - tetr(10, slg_start-(slg_fl_start-1))) / time
+    if x < 1 and slg_fl_end-2 < 0:
+        y = slg_fl_end-2
+        x = round(10**x, 6)
+    else:
+        y = slg_fl_end-1
+        x = round(x, 6)
+    return f"{x} OoMs^{y}"
 # Comparisons
 def gt(a, b):
     a, b = correct(a), correct(b)
@@ -1930,5 +1891,4 @@ def parse_suffix(s: str) -> int:
                 except:
                     continue
     return f"Unrecognized suffix: {s}"
-
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
