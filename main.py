@@ -375,7 +375,7 @@ async def guide(ctx):
 
         "log", "ln", "logbase", "slog", "lambertw",
 
-        "fact (factorial)", "gamma",
+        "fact (factorial)", "gamma", "OoMs",
 
         "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
 
@@ -521,7 +521,7 @@ async def calc(ctx, *, expression: str):
             "logbase": logbase,
 
             "log": log
-
+            "ooms": ooms
         }
 
 
@@ -1307,7 +1307,7 @@ def lambertw(z):
 
     return add(part1, part2)
 
-def OoMs(start, end, time=1):
+def ooms(start, end, time=1):
     if gt(start, end): 
         raise ValueError("OoMs error: start for the OoMs cant be more than the end")
     slg_end = slog(end)
