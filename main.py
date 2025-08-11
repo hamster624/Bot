@@ -567,7 +567,7 @@ import math
 import mpmath as mp
 # --Editable constants--
 precision = 50 # amount of decimals for calculations.
-format_decimals = 6 # amount of decimals for formatting output
+format_decimals = 50 # amount of decimals for formatting output
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
 max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
 suffix_max= 1e308 # For the suffix format at how much of 10^x it adds scientific notation (max is 1e308)
@@ -1943,5 +1943,6 @@ def parse_suffix(s: str) -> int:
                     continue
     return f"Unrecognized suffix: {s}"
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
 
 
