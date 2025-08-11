@@ -7,7 +7,7 @@ import time
 import json
 from flask import Flask
 from threading import Thread
-
+format_decimals = 16
 app = Flask('')
 @app.route('/')
 
@@ -405,7 +405,10 @@ async def guide(ctx):
 
 @bot.command()
 async def calc(ctx, *, expression: str):
-    global precision  # <-- declare global here at the top
+    """
+    Evaluate an expression.
+    """
+    global format_decimals  # to modify the outer variable
 
     formats = {
         "format": format,
@@ -417,56 +420,31 @@ async def calc(ctx, *, expression: str):
     }
 
     try:
-        tokens = expression.strip().split()
+        tokens = expression.strip().split(" ")
 
         fmt_name = "format"
-        precision = 16  # default precision
+        precision = None
 
-        # Check up to last 3 tokens for format and numeric tokens
-        trailing_tokens = []
-        for _ in range(min(3, len(tokens))):
-            trailing_tokens.insert(0, tokens.pop())
+        # Check last token
+        last_token = tokens[-1].lower()
 
-        # Find all numeric tokens in trailing_tokens
-        numeric_tokens = [t for t in trailing_tokens if t.isdigit()]
-        format_tokens = [t.lower() for t in trailing_tokens if t.lower() in formats]
-
-        # Use the 2nd or 3rd numeric token as precision if it exists
-        if len(numeric_tokens) >= 2:
-            try:
-                prec_val = int(numeric_tokens[1])
-            except ValueError:
-                await ctx.reply("Error: Precision must be an integer.", mention_author=False)
-                return
-            precision = min(prec_val, 500)
-        elif len(numeric_tokens) == 1:
-            # Only one numeric token = first numeric token → keep as part of expression
-            tokens.append(numeric_tokens[0])
-
-        # Pick the format token (last one if multiple)
-        if format_tokens:
-            fmt_name = format_tokens[-1]
-
-        # Re-add trailing tokens except the ones used as precision or format
-        for t in trailing_tokens:
-            if t.isdigit():
-                if len(numeric_tokens) >= 2 and t == numeric_tokens[1]:
-                    continue  # skip precision token used
-                if len(numeric_tokens) == 1 and t == numeric_tokens[0]:
-                    continue  # already appended
-            if t.lower() in formats and t.lower() == fmt_name:
-                continue  # skip format token used
-            tokens.append(t)
-
-        if not tokens:
-            await ctx.reply("Error: No expression provided.", mention_author=False)
-            return
+        if last_token in formats:
+            fmt_name = last_token
+            tokens = tokens[:-1]
+            if tokens and tokens[-1].isdigit():
+                precision = int(tokens[-1])
+                tokens = tokens[:-1]
+        else:
+            if tokens and tokens[-1].isdigit():
+                precision = int(tokens[-1])
+                tokens = tokens[:-1]
 
         expr = " ".join(tokens)
 
-        # Now set your precision globals — no mp.dps here:
-        global precision
-        precision = 16
+        # Set precision
+        if precision is not None:
+            mp.dps = precision
+            format_decimals = precision
 
         safe_globals = {
             "__builtins__": {},
@@ -504,14 +482,14 @@ async def calc(ctx, *, expression: str):
             "log": log,
             "ln": ln,
             "logbase": logbase,
-            "ooms": ooms,
+            "ooms": ooms
         }
 
         start_time = time.time()
 
         try:
             value = eval(expr, safe_globals, {})
-        except Exception:
+        except:
             value = expr
 
         result = formats[fmt_name](value)
@@ -526,15 +504,13 @@ async def calc(ctx, *, expression: str):
 
     except Exception as e:
         await ctx.reply(f"Error: `{e}`", mention_author=False)
-
 import mpmath as mp
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
-format_decimals = precision  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
+  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
 max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
 suffix_max= 1e308 # at how much of 10^x it adds scientific notation (max is 1e308)
-mp.mp.dps = precision
 # --End of editable constants--
 
 # --Editable suffix format--
@@ -1537,8 +1513,8 @@ def letter(s: str) -> str:
                 else:
                     exponent_val = mp.mpf(exponent_str)
 
-                leftover = mp.fmod(exponent_val, 3)  # high precision remainder
-                group = mp.floor(exponent_val / 3) - 1  # high precision division
+                leftover = mp.fmod(exponent_val, 3)
+                group = mp.floor(exponent_val / 3) - 1
 
                 new_mantissa = mantissa * mp.power(10, leftover)
                 if new_mantissa >= mp.mpf('950'):
