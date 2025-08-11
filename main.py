@@ -565,13 +565,12 @@ async def calc(ctx, *, expression: str):
         await ctx.reply(f"Error: `{e}`", mention_author=False)
 
 import mpmath as mp
-import math
 # --Editable constants--
 precision = 50 # amount of decimals for calculations.
+format_decimals = 50 # amount of decimals for formatting output
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
 max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
-suffix_max= 1e308 # at how much of 10^x it adds scientific notation (max is 1e308)
-format_decimals = precision # amount of decimals for formatting output
+suffix_max= 1e308 # For the suffix format at how much of 10^x it adds scientific notation (max is 1e308)
 # --End of editable constants--
 
 # --Editable suffix format--
@@ -621,7 +620,11 @@ def apply_sign(x, sign):
         return x
     else:
         return negate(x)
-
+def mpf_lim(val, max_exp=308):
+    x = mp.mpf(val)
+    if abs(mp.log10(abs(x))) > max_exp:
+        raise OverflowError("Value exceeds max exponent limit")
+    return x
 def negate(x):
     if x is None:
         return None
@@ -647,11 +650,11 @@ def compare_positive(a, b):
         return -1
 
 def tetration(a, h):
+    a,h = correct2(a), correct2(h)
     try:
-        h_m = mp.mpf(h)
+        h_m = mpf_lim(h)
     except:
-        return "Error: Tetration height must be a valid number under 1e308"
-    
+        return "Error: Height must be a a valid number under 1e308"
     sign_a, abs_a = get_sign_and_abs(a)
     if sign_a == -1:
         return "Error: Tetration base must be non-negative"
@@ -662,7 +665,7 @@ def tetration(a, h):
         return "Error: Tetration height must be non-negative"
     
     try:
-        a_m = mp.mpf(a_val)
+        a_m = mpf_lim(a_val)
         use_float = True
     except:
         use_float = False
@@ -673,13 +676,13 @@ def tetration(a, h):
             if mp.isnan(s) or mp.isinf(s) or s == "Error: x can't be a negative number":
                 return "NaN"
             try:
-                return tetration(10, mp.mpf(s) + h_m - 1)
+                return tetration(10, s + h_m - 1)
             except:
                 return "NaN"
         else:
             return "NaN"
     
-    a_m = mp.mpf(a_val)
+    a_m = mpf_lim(a_val)
     if a_m < 0:
         return "Error: Tetration base must be non-negative"
     if a_m == 0:
@@ -740,7 +743,7 @@ def tetration(a, h):
             else:
                 try:
                     current = mp.power(a_m, current)
-                except (OverflowError, ValueError):
+                except:
                     current = next_log10
                     layer = 1
             layer0_iter += 1
@@ -775,7 +778,7 @@ def tetration(a, h):
 
 def slog_numeric(x, base):
     try:
-        base_m = mp.mpf(base)
+        base_m = mpf_lim(base)
     except:
         return mp.nan
     if base_m <= 0 or base_m == 1:
@@ -785,7 +788,7 @@ def slog_numeric(x, base):
         return mp.nan
     try:
         x_val = mp.mpf(abs_x)
-    except (TypeError, ValueError):
+    except:
         return mp.nan
     
     if x_val <= 0:
@@ -815,13 +818,14 @@ def slog_numeric(x, base):
     return count + frac
 
 def slog(x, base=10):
+    x = correct2(x)
     sign_x, abs_x = get_sign_and_abs(x)
     if sign_x == -1:
         return "Error: x can't be a negative number"
     x = abs_x
     
     if x == 0:
-        return mp.mpf(-1)
+        return -1
     
     if isinstance(x, str):
         if base == 10:
@@ -833,7 +837,7 @@ def slog(x, base=10):
             elif x.startswith("(10^)^"):
                 parts = x.split(' ', 1)
                 if len(parts) < 2:
-                    return mp.nan
+                    return "NaN"
                 head, mantissa_str = parts
                 k_str = head[6:]
                 try:
@@ -1730,9 +1734,9 @@ def suffix_to_scientific(input_str: str) -> str:
         mantissa_output = formatted
 
     if mantissa_output == "1":
-        return "e" + str(int(total_exponent))
+        return "1e" + str(int(total_exponent))
     else:
-        return mantissa_output + "e" + str(int(total_exponent))
+        return mantissa_output + "1e" + str(int(total_exponent))
 
 # Code helpers
 def strip_trailing_zeros(num_str):
@@ -1813,22 +1817,46 @@ def correct(x):
                 before_f = x[:f_index]
                 after_f = x[f_index+1:]
                 try:
-                    base = mp.mpf(before_f)
-                    exp = mp.mpf(after_f)
+                    base = (before_f)
+                    exp = (after_f)
                     x = "10^^" + str(exp + mp.log10(base))
                 except Exception:
                     if x.startswith("F"):
-                        x = "10^^" + x[1:]
+                        x = tetr(10,x[1:])
             elif x.startswith("F"):
                 try:
-                    height = mp.mpf(x[1:])
+                    height = x[1:]
                     return tetr(10, height)
                 except Exception:
                     pass
         if tetr(10, slog(x)) == "NaN":
             return suffix_to_scientific(x)
     return tetr(10, slog(x))
-
+def correct2(x):
+    if isinstance(x, (int, float, mp.mpf)):
+        return str(x)
+    x = x.strip()
+    if "F" in x:
+        f_index = x.find("F")
+        if f_index > 0:
+            before_f = x[:f_index]
+            after_f = x[f_index+1:]
+            try:
+                base = before_f
+                exp = after_f
+                x = "10^^" + str(exp + mp.log10(base))
+            except Exception:
+                if x.startswith("F"):
+                    x = "10^^" + x[1:]
+        elif x.startswith("F"):
+            try:
+                height = x[1:]
+                return "10^^" + height
+            except Exception:
+                pass
+    if float(suffix_to_scientific(x)) > 1000:
+        return suffix_to_scientific(x)
+    return x
 def fix_letter_output(s):
     cleaned = ''.join(c for c in s if c not in '()')
     e_count = 0
@@ -1918,4 +1946,3 @@ def parse_suffix(s: str) -> int:
                     continue
     return f"Unrecognized suffix: {s}"
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
-
