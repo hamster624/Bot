@@ -563,12 +563,11 @@ async def calc(ctx, *, expression: str):
     except Exception as e:
 
         await ctx.reply(f"Error: `{e}`", mention_author=False)
-
-import mpmath as mp
 import math
+import mpmath as mp
 # --Editable constants--
 precision = 50 # amount of decimals for calculations.
-format_decimals = 50 # amount of decimals for formatting output
+format_decimals = 6 # amount of decimals for formatting output
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
 max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
 suffix_max= 1e308 # For the suffix format at how much of 10^x it adds scientific notation (max is 1e308)
@@ -1839,24 +1838,21 @@ def correct2(x):
     x = x.strip()
     if "F" in x:
         f_index = x.find("F")
-        if f_index > 0:
-            before_f = x[:f_index]
-            after_f = x[f_index+1:]
-            try:
-                base = before_f
-                exp = after_f
-                x = "10^^" + str(exp + mp.log10(base))
-            except Exception:
-                if x.startswith("F"):
-                    x = "10^^" + x[1:]
-        elif x.startswith("F"):
-            try:
-                height = x[1:]
-                return "10^^" + height
-            except Exception:
-                pass
+        before_f = x[:f_index]
+        after_f = x[f_index+1:]
+        try:
+            base = mp.mpf(before_f) if before_f else mp.mpf(1)
+            exp = mp.mpf(after_f)
+        except Exception:
+            return x
+        if base == 1:
+            return "10^^" + str(exp)
+        else:
+            val = exp + mp.log10(base)
+            return "10^^" + str(val)
     if float(suffix_to_scientific(x)) > 1000:
         return suffix_to_scientific(x)
+    
     return x
 def fix_letter_output(s):
     cleaned = ''.join(c for c in s if c not in '()')
@@ -1947,4 +1943,5 @@ def parse_suffix(s: str) -> int:
                     continue
     return f"Unrecognized suffix: {s}"
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
 
