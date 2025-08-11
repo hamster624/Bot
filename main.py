@@ -206,7 +206,7 @@ async def on_message(message):
             "__builtins__": {},
 
             "math": math,
-
+            "mp": mp,
             "tetration": tetration,
 
             "tetr": tetration,
@@ -452,7 +452,7 @@ async def calc(ctx, *, expression: str):
             "__builtins__": {},
 
             "math": math,
-
+            "mp": mp,
             "tetration": tetration,
 
             "tetr": tetration,
@@ -565,6 +565,7 @@ async def calc(ctx, *, expression: str):
         await ctx.reply(f"Error: `{e}`", mention_author=False)
 
 import mpmath as mp
+import math
 # --Editable constants--
 precision = 50 # amount of decimals for calculations.
 format_decimals = 50 # amount of decimals for formatting output
@@ -1946,3 +1947,4 @@ def parse_suffix(s: str) -> int:
                     continue
     return f"Unrecognized suffix: {s}"
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
