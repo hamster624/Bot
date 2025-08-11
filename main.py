@@ -490,7 +490,7 @@ async def calc(ctx, *, expression: str):
         try:
             value = eval(expr, safe_globals, {})
         except Exception:
-            value = expr  # fallback to raw expression if eval fails
+            value = expr
 
         result = formats[fmt_name](value)
 
@@ -505,7 +505,9 @@ async def calc(ctx, *, expression: str):
     except Exception as e:
         await ctx.reply(f"Error: `{e}`", mention_author=False)
 import mpmath as mp
+import math
 # --Editable constants--
+precision = 16 
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
 format_decimals = precision  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
 max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
@@ -1856,5 +1858,3 @@ def parse_suffix(s: str) -> int:
                     continue
     return f"Unrecognized suffix: {s}"
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
-
-
