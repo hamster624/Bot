@@ -405,14 +405,7 @@ async def guide(ctx):
 
 @bot.command()
 async def calc(ctx, *, expression: str):
-    """
-    Evaluate an expression, with optional format and precision.
-    Usage examples:
-    !calc 2+2
-    !calc 2+2 format
-    !calc 2+2 10          # sets precision to 10, uses default format
-    !calc 2+2 format 10   # uses format and sets precision to 10
-    """
+    global precision  # <-- declare global here at the top
 
     formats = {
         "format": format,
@@ -427,15 +420,43 @@ async def calc(ctx, *, expression: str):
         tokens = expression.strip().split()
 
         fmt_name = "format"
-        precision = 16 
+        precision = 16  # default precision
 
-        if tokens and tokens[-1].isdigit():
-            precision = int(tokens[-1])
-            tokens = tokens[:-1]
+        # Check up to last 3 tokens for format and numeric tokens
+        trailing_tokens = []
+        for _ in range(min(3, len(tokens))):
+            trailing_tokens.insert(0, tokens.pop())
 
-        if tokens and tokens[-1].lower() in formats:
-            fmt_name = tokens[-1].lower()
-            tokens = tokens[:-1]
+        # Find all numeric tokens in trailing_tokens
+        numeric_tokens = [t for t in trailing_tokens if t.isdigit()]
+        format_tokens = [t.lower() for t in trailing_tokens if t.lower() in formats]
+
+        # Use the 2nd or 3rd numeric token as precision if it exists
+        if len(numeric_tokens) >= 2:
+            try:
+                prec_val = int(numeric_tokens[1])
+            except ValueError:
+                await ctx.reply("Error: Precision must be an integer.", mention_author=False)
+                return
+            precision = min(prec_val, 500)
+        elif len(numeric_tokens) == 1:
+            # Only one numeric token = first numeric token → keep as part of expression
+            tokens.append(numeric_tokens[0])
+
+        # Pick the format token (last one if multiple)
+        if format_tokens:
+            fmt_name = format_tokens[-1]
+
+        # Re-add trailing tokens except the ones used as precision or format
+        for t in trailing_tokens:
+            if t.isdigit():
+                if len(numeric_tokens) >= 2 and t == numeric_tokens[1]:
+                    continue  # skip precision token used
+                if len(numeric_tokens) == 1 and t == numeric_tokens[0]:
+                    continue  # already appended
+            if t.lower() in formats and t.lower() == fmt_name:
+                continue  # skip format token used
+            tokens.append(t)
 
         if not tokens:
             await ctx.reply("Error: No expression provided.", mention_author=False)
@@ -443,8 +464,9 @@ async def calc(ctx, *, expression: str):
 
         expr = " ".join(tokens)
 
-        if precision is not None:
-            mp.dps = precision
+        # Now set your precision globals — no mp.dps here:
+        global precision
+        precision = 16
 
         safe_globals = {
             "__builtins__": {},
@@ -504,10 +526,10 @@ async def calc(ctx, *, expression: str):
 
     except Exception as e:
         await ctx.reply(f"Error: `{e}`", mention_author=False)
+
 import mpmath as mp
 import math
 # --Editable constants--
-precision = 16 
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
 format_decimals = precision  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
 max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
