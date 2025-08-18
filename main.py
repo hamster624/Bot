@@ -206,7 +206,6 @@ async def on_message(message):
             "__builtins__": {},
 
             "math": math,
-            "mp": mp,
             "tetration": tetration,
 
             "tetr": tetration,
@@ -371,7 +370,7 @@ async def guide(ctx):
 
     operations = [
 
-        "tetration (tetr)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+        "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
 
         "log", "ln", "logbase", "slog", "lambertw",
 
@@ -418,7 +417,7 @@ async def calc(ctx, *, expression: str):
         "format": format,
 
         "power10_tower": power10_tower,
-
+        "solve_equation": solve_equation,
         "correct": correct,
 
         "hyper_e": hyper_e,
@@ -452,7 +451,6 @@ async def calc(ctx, *, expression: str):
             "__builtins__": {},
 
             "math": math,
-            "mp": mp,
             "tetration": tetration,
 
             "tetr": tetration,
@@ -564,13 +562,11 @@ async def calc(ctx, *, expression: str):
 
         await ctx.reply(f"Error: `{e}`", mention_author=False)
 import math
-import mpmath as mp
 # --Editable constants--
-precision = 55 # amount of decimals for calculations.
-format_decimals = 50 # amount of decimals for formatting output
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
+format_decimals = 6  # amount of decimals for the "hyper-e" format, "format" and the "power10_tower" format. Keep below 16.
 max_layer = 10  # amount of 10^ in power10_tower format when it switches from 10^ iterated times to 10^^x
-suffix_max= 1e308 # For the suffix format at how much of 10^x it adds scientific notation (max is 1e308)
+suffix_max= 1e308 # at how much of 10^x it adds scientific notation (max is 1e308)
 # --End of editable constants--
 
 # --Editable suffix format--
@@ -597,16 +593,14 @@ PRECISION_LIMIT = 1e-308
 MIN_EXPONENT = -1e308
 MAX_EXPONENT = 1e308
 
-mp.mp.dps = precision
 def get_sign_and_abs(x):
     if x is None:
         return 1, None
-    if isinstance(x, (int, float, mp.mpf)):
-        x_m = mp.mpf(x)
-        if x_m < 0:
-            return -1, -x_m
+    if isinstance(x, (int, float)):
+        if x < 0:
+            return -1, -x
         else:
-            return 1, x_m
+            return 1, x
     elif isinstance(x, str):
         if x.startswith('-'):
             return -1, x[1:]
@@ -620,19 +614,14 @@ def apply_sign(x, sign):
         return x
     else:
         return negate(x)
-def mpf_lim(val, max_exp=308):
-    x = mp.mpf(val)
-    if abs(mp.log10(abs(x))) > max_exp:
-        raise OverflowError("Value exceeds max exponent limit")
-    return x
+
 def negate(x):
     if x is None:
         return None
-    if isinstance(x, (int, float, mp.mpf)):
-        x_m = mp.mpf(x)
-        if x_m == 0:
-            return mp.mpf(0)
-        return -x_m
+    if isinstance(x, (int, float)):
+        if x == 0:
+            return 0
+        return -x
     elif isinstance(x, str):
         if x.startswith('-'):
             return x[1:]
@@ -650,81 +639,72 @@ def compare_positive(a, b):
         return -1
 
 def tetration(a, h):
-    a,h = correct2(a), correct2(h)
     try:
-        h_m = mpf_lim(h)
-    except:
-        return "Error: Height must be a a valid number under 1e308"
+        h_float = float(h)
+    except (TypeError, ValueError):
+        return "Error: Tetration height must be a valid number"
+    
     sign_a, abs_a = get_sign_and_abs(a)
     if sign_a == -1:
         return "Error: Tetration base must be non-negative"
     
     a_val = abs_a
     
-    if h_m < 0:
+    if h_float < 0:
         return "Error: Tetration height must be non-negative"
     
     try:
-        a_m = mpf_lim(a_val)
+        a_float = float(a_val)
         use_float = True
-    except:
+    except (TypeError, ValueError):
         use_float = False
         
     if not use_float:
         if isinstance(a_val, str):
             s = slog(a_val)
-            if mp.isnan(s) or mp.isinf(s) or s == "Error: x can't be a negative number":
+            if math.isnan(s) or math.isinf(s) or s == "Error: x can't be a negative number":
                 return "NaN"
             try:
-                return tetration(10, s + h_m - 1)
-            except:
+                return tetration(10, float(s) + h_float - 1)
+            except (ValueError, TypeError, OverflowError):
                 return "NaN"
         else:
             return "NaN"
     
-    a_m = mpf_lim(a_val)
-    if a_m < 0:
+    a_float = float(a_val)
+    if a_float < 0:
         return "Error: Tetration base must be non-negative"
-    if a_m == 0:
-        if h_m == 0:
+    if a_float == 0:
+        if h_float == 0:
             return "NaN"
-        if mp.floor(h_m) == h_m:
-            if int(mp.floor(h_m)) % 2 == 0:
-                return "0"
-            else:
-                return "1" if h_m == 1 else "0"
-        else:
-            return "0"
-    if a_m == 1:
+        return "0" if h_float % 2 == 0 else ("1" if h_float == 1 else "0")
+    if a_float == 1:
         return "1"
-
-    try:
-        if h_m >= mp.mpf(LARGE_HEIGHT_THRESHOLD):
-            if abs(h_m - mp.nint(h_m)) < mp.mpf('1e-12'):
-                height_str = format_int_scientific(int(mp.nint(h_m)))
-            else:
-                height_str = format_float_scientific(h_m)
-            return f"10^^{height_str}"
-    except NameError:
-        pass
     
-    log10a = mp.log10(a_m) if a_m > 0 else -mp.inf
-    log_log10a = mp.log10(log10a) if log10a > 0 else -mp.inf
+    if h_float >= LARGE_HEIGHT_THRESHOLD:
+        if abs(h_float - round(h_float)) < 1e-12:
+            height_str = format_int_scientific(int(round(h_float)))
+        else:
+            height_str = format_float_scientific(h_float)
+        return f"10^^{height_str}"
+    
+    log10a = math.log10(a_float) if a_float > 0 else -float('inf')
+    log_log10a = math.log10(log10a) if log10a > 0 else -float('inf')
     
     try:
-        n = mp.floor(h_m)
+        n = math.floor(h_float)
     except (ValueError, TypeError, OverflowError):
         return "NaN"
     
-    f = h_m - n
-    current = mp.power(a_m, f) if f > 0 else mp.mpf(1)
+    f = h_float - n
+    current = a_float ** f if f > 0 else 1.0
     layer = 0
     if n == 0:
-        if current < mp.mpf('1e12'):
+        if current < 1e12:
             return current
-        if abs(current - mp.nint(current)) < mp.mpf('1e-10'):
-            return format_float_scientific(mp.nint(current))
-        return mp.nstr(current, 15)
+        if abs(current - round(current)) < 1e-10:
+            return format_float_scientific(round(current))
+        return f"{current:.15g}"
     
     n_remaining = int(n)
     layer0_iter = 0
@@ -732,18 +712,18 @@ def tetration(a, h):
     while n_remaining > 0:
         if layer == 0:
             if layer0_iter >= 10000:
-                if abs(current - prev_current) < mp.mpf('1e-10'):
+                if abs(current - prev_current) < 1e-10:
                     break
                 prev_current = current
                 layer0_iter = 0
             next_log10 = current * log10a
-            if next_log10 > mp.mpf('307'):
+            if next_log10 > 307:
                 current = next_log10
                 layer = 1
             else:
                 try:
-                    current = mp.power(a_m, current)
-                except:
+                    current = a_float ** current
+                except (OverflowError, ValueError):
                     current = next_log10
                     layer = 1
             layer0_iter += 1
@@ -756,69 +736,66 @@ def tetration(a, h):
             layer += n_remaining
             n_remaining = 0
     
-    if layer >= 1 and mp.isfinite(current) and current > mp.mpf(LARGE_HEIGHT_THRESHOLD):
-        while current > mp.mpf(LARGE_HEIGHT_THRESHOLD):
-            current = mp.log10(current)
+    if layer >= 1 and math.isfinite(current) and current > LARGE_HEIGHT_THRESHOLD:
+        while current > LARGE_HEIGHT_THRESHOLD:
+            current = math.log10(current)
             layer += 1
     
     if layer == 0:
-        if current < mp.mpf('1e12'):
+        if current < 1e12:
             return current
-        if mp.isnan(current):
+        if math.isnan(current):
             return "NaN"
-        if abs(current - mp.nint(current)) < mp.mpf('1e-10'):
-            return format_float_scientific(mp.nint(current))
-        return f"{mp.nstr(current, n=mp.mp.dps)}"
+        if abs(current - round(current)) < 1e-10:
+            return format_float_scientific(round(current))
+        return f"{current:.15g}"
     elif layer == 1:
-        return f"e{mp.nstr(current, n=mp.mp.dps)}"
+        return f"e{current:.15g}"
     elif layer <= FORMAT_THRESHOLD:
-        return 'e' * int(layer) + f"{mp.nstr(current, n=mp.mp.dps)}"
+        return 'e' * layer + f"{current:.15g}"
     else:
-        return f"(10^)^{layer} {mp.nstr(current, n=mp.mp.dps)}"
+        return f"(10^)^{layer} {current:.15g}"
 
 def slog_numeric(x, base):
-    try:
-        base_m = mpf_lim(base)
-    except:
-        return mp.nan
-    if base_m <= 0 or base_m == 1:
-        return mp.nan
+    if base <= 0 or base == 1:
+        return float('nan')
     sign_x, abs_x = get_sign_and_abs(x)
     if sign_x == -1:
-        return mp.nan
+        return float('nan')
+    x = abs_x
+    
     try:
-        x_val = mp.mpf(abs_x)
-    except:
-        return mp.nan
+        x_val = float(x)
+    except (TypeError, ValueError):
+        return float('nan')
     
     if x_val <= 0:
-        return -mp.inf
+        return float('-inf')
     
-    count = mp.mpf('0')
+    count = 0.0
     current = x_val
     while current < 1:
         if current <= 0:
-            return -mp.inf
+            return float('-inf')
         try:
-            current = mp.power(base_m, current)
+            current = base ** current
         except OverflowError:
-            current = mp.inf
+            current = 0
         count -= 1
-    while current > base_m:
+    while current > base:
         try:
-            current = mp.log(current, base_m)
+            current = math.log(current, base)
         except (OverflowError, ValueError):
-            return mp.nan
+            return float('nan')
         count += 1
     
     try:
-        frac = mp.log(current, base_m)
+        frac = math.log(current, base)
     except (OverflowError, ValueError):
-        return mp.nan
+        return float('nan')
     return count + frac
 
 def slog(x, base=10):
-    x = correct2(x)
     sign_x, abs_x = get_sign_and_abs(x)
     if sign_x == -1:
         return "Error: x can't be a negative number"
@@ -831,20 +808,20 @@ def slog(x, base=10):
         if base == 10:
             if x.startswith("10^^"):
                 try:
-                    return mp.mpf(x[4:])
-                except:
-                    return mp.nan
+                    return float(x[4:])
+                except (ValueError, TypeError, OverflowError):
+                    return float('nan')
             elif x.startswith("(10^)^"):
                 parts = x.split(' ', 1)
                 if len(parts) < 2:
-                    return "NaN"
+                    return float('nan')
                 head, mantissa_str = parts
                 k_str = head[6:]
                 try:
                     k = int(k_str)
-                    mantissa = mp.mpf(mantissa_str)
-                except:
-                    return mp.nan
+                    mantissa = float(mantissa_str)
+                except (ValueError, TypeError, OverflowError):
+                    return float('nan')
                 return k + slog_numeric(mantissa, 10)
             else:
                 count = 0
@@ -854,44 +831,44 @@ def slog(x, base=10):
                     s = s[1:]
                 if count == 0:
                     try:
-                        return slog_numeric(mp.mpf(x), 10)
-                    except:
-                        return mp.nan
+                        return slog_numeric(float(x), 10)
+                    except (ValueError, TypeError, OverflowError):
+                        return float('nan')
                 else:
                     try:
-                        mantissa = mp.mpf(s)
-                    except:
-                        return mp.nan
+                        mantissa = float(s)
+                    except (ValueError, TypeError, OverflowError):
+                        return float('nan')
                     return count + slog_numeric(mantissa, 10)
         else:
-            count = mp.mpf('0')
+            count = 0.0
             s = x
             while s:
                 if s.startswith("10^^"):
                     height_str = s[4:]
                     try:
-                        height = mp.mpf(height_str)
-                    except:
+                        height = float(height_str)
+                    except (ValueError, TypeError, OverflowError):
                         try:
-                            return count + slog_numeric(mp.mpf(s), base)
-                        except:
-                            return mp.nan
+                            return count + slog_numeric(float(s), base)
+                        except (ValueError, TypeError, OverflowError):
+                            return float('nan')
                     count += height
                     return count
                 elif s.startswith("(10^)^"):
                     parts = s.split(' ', 1)
                     if len(parts) < 2:
                         try:
-                            return count + slog_numeric(mp.mpf(s), base)
-                        except:
-                            return mp.nan
+                            return count + slog_numeric(float(s), base)
+                        except (ValueError, TypeError, OverflowError):
+                            return float('nan')
                     head, mantissa_str = parts
                     k_str = head[6:]
                     try:
                         k = int(k_str)
-                        mantissa = mp.mpf(mantissa_str)
-                    except:
-                        return mp.nan
+                        mantissa = float(mantissa_str)
+                    except (ValueError, TypeError, OverflowError):
+                        return float('nan')
                     count += k
                     s = mantissa_str
                 elif s.startswith('e'):
@@ -903,9 +880,9 @@ def slog(x, base=10):
                     s = rest
                 else:
                     try:
-                        return count + slog_numeric(mp.mpf(s), base)
+                        return count + slog_numeric(float(s), base)
                     except:
-                        return mp.nan
+                        return float('nan')
             return count
     else:
         return slog_numeric(x, base)
@@ -921,15 +898,11 @@ def log(x):
         if x == "NaN" or x.startswith("Error:"):
             return x
         if x.startswith("10^^"):
-            try:
-                inner = mp.mpf(x[4:])
-                if inner < mp.mpf(LARGE_HEIGHT_THRESHOLD):
-                    try:
-                        return correct("10^^" + str(inner - 1))
-                    except:
-                        return str(x)
-            except:
-                return str(x)
+            if float(x.strip('10^^')) < LARGE_HEIGHT_THRESHOLD:
+                try:
+                    return correct("10^^" + str(float(x[4:]) - 1))
+                except:
+                    return str(x)
         elif x.startswith("(10^)^"):
             parts = x.split(' ', 1)
             if len(parts) < 2:
@@ -938,12 +911,12 @@ def log(x):
             k_str = head[6:]
             try:
                 k = int(k_str)
-                mantissa = mp.mpf(mantissa_str)
+                mantissa = float(mantissa_str)
             except:
                 return "NaN"
             if k == 1:
                 return str(mantissa)
-            if k >= mp.mpf(LARGE_HEIGHT_THRESHOLD):
+            if k >= LARGE_HEIGHT_THRESHOLD:
                 return correct(x)
             else:
                 return f"(10^)^{k-1} {mantissa_str}"
@@ -959,40 +932,38 @@ def log(x):
                 return correct('e' * (count - 1) + s)
         else:
             try:
-                num_val = mp.mpf(x)
-                return str(mp.log10(num_val))
+                num_val = float(x)
+                return str(math.log10(num_val))
             except:
                 return "NaN"
     else:
         try:
-            return mp.log10(x)
+            return math.log10(x)
         except:
             return "NaN"
 
 def logbase(a,b):
-    a, b = correct(a), correct(b)
-    return div(log(a),log(b))
-
+	a, b = correct(a), correct(b)
+	return div(log(a),log(b))
 def ln(x):
-    x = correct(x)
-    return mul(log(x), mp.mpf(mp.log(10)))
-
+	x=correct(x)
+	return mul(log(x),2.302585092994046)
 def addlayer(a, b=1):
     a, b = correct(a), correct(b)
     s = slog(a)
     try:
-        if mp.isinf(s) or mp.isnan(s) or isinstance(s, str):
+        if math.isinf(s) or math.isnan(s) or isinstance(s, str):
             return "NaN"
     except:
         return "NaN"
     try:
-        return tetration(10, mp.mpf(b) + mp.mpf(s))
-    except:
-        return "Error trying to do addlayer"
+        return tetration(10, float(b) + float(s))
+    except (ValueError, TypeError, OverflowError):
+        return "Error trying to do ``addlayer``"
 
 def is_float_convertible(x):
     try:
-        mp.mpf(x)
+        float(x)
         return True
     except:
         return False
@@ -1007,14 +978,14 @@ def subtract_positive(a, b, depth=0):
     if b in [0, "0"]:
         return a
     if is_float_convertible(a) and is_float_convertible(b):
-        a_float = mp.mpf(a)
-        b_float = mp.mpf(b)
+        a_float = float(a)
+        b_float = float(b)
         result = a_float - b_float
         if result < 0:
             return negate(str(abs(result)))
         if result == 0:
             return 0
-        if abs(result) < mp.mpf('1e-3') or abs(result) >= mp.mpf('1e12'):
+        if abs(result) < 1e-3 or abs(result) >= 1e12:
             return format_float_scientific(result)
         return str(result)
     
@@ -1026,19 +997,19 @@ def subtract_positive(a, b, depth=0):
     
     if isinstance(a, str) and a.startswith('e') and is_float_convertible(b):
         try:
-            exponent = mp.mpf(a[1:])
-            if exponent > mp.mpf('1e2'):
-                a_val = mp.power(10, exponent)
-                if a_val > mp.mpf('1e100'):
+            exponent = float(a[1:])
+            if exponent > 1e2:
+                a_val = 10 ** exponent
+                if a_val > 1e100:
                     return a
             else:
-                a_val = mp.power(10, exponent)
-            result = a_val - mp.mpf(b)
+                a_val = 10 ** exponent
+            result = a_val - float(b)
             if result <= 0:
                 return 0
-            if result < mp.mpf('1e12'):
+            if result < 1e12:
                 return result
-            return "e" + str(mp.log10(result))
+            return "e" + str(math.log10(result))
         except:
             pass 
     A = log(a)
@@ -1051,14 +1022,14 @@ def subtract_positive(a, b, depth=0):
         return a
     
     try:
-        D_float = mp.mpf(D)
-        if D_float > mp.mpf('1000'):
+        D_float = float(D)
+        if D_float > 1000:
             return a
-        C = mp.power(10, D_float) - 1
+        C = 10**D_float - 1
         if C <= 0:
             return 0
-        log10C = mp.log10(C)
-        B_float = mp.mpf(B)
+        log10C = math.log10(C)
+        B_float = float(B)
         new_exp = B_float + log10C
         return "e" + str(new_exp)
     except:
@@ -1071,17 +1042,17 @@ def add_positive(a, b):
     if b in [0, "0"]:
         return a
     if is_float_convertible(a) and is_float_convertible(b):
-        a_float = mp.mpf(a)
-        b_float = mp.mpf(b)
+        a_float = float(a)
+        b_float = float(b)
         result = a_float + b_float
-        if abs(result) < mp.mpf('1e308'):
+        if abs(result) < 1e308:
             return result
-        elif abs(result) >= mp.mpf('1e308'):
+        elif abs(result) >= 1e308:
             return format_float_scientific(result)
     
     s_a = slog(a)
     s_b = slog(b)
-    if mp.isnan(s_a) or mp.isnan(s_b) or isinstance(s_a, str) or isinstance(s_b, str):
+    if math.isnan(s_a) or math.isnan(s_b) or isinstance(s_a, str) or isinstance(s_b, str):
         return "NaN"
     if abs(s_a - s_b) >= 1:
         return a if s_a > s_b else b
@@ -1089,7 +1060,7 @@ def add_positive(a, b):
         return a if s_a >= s_b else b
     if s_a < 1 and s_b < 1:
         try:
-            return mp.mpf(a) + mp.mpf(b)
+            return float(a) + float(b)
         except:
             return a if s_a >= s_b else b
     if gt(b, a) == True:
@@ -1100,24 +1071,24 @@ def add_positive(a, b):
     log_b = log(b)
     try:
         if is_float_convertible(log_a) and is_float_convertible(log_b):
-            d_val = mp.mpf(log_b) - mp.mpf(log_a)
+            d_val = float(log_b) - float(log_a)
         else:
             d_exp = subtract(log_b, log_a)
-            d_val = mp.mpf(d_exp) if is_float_convertible(d_exp) else -mp.inf
+            d_val = float(d_exp) if is_float_convertible(d_exp) else -float('inf')
     except:
-        d_val = -mp.inf
+        d_val = -float('inf')
     
-    if d_val < mp.mpf(MIN_EXPONENT):
+    if d_val < MIN_EXPONENT:
         return a
     
     try:
-        x = mp.power(10, d_val)
-        y = mp.log10(1 + x)
+        x = 10.0 ** d_val
+        y = math.log10(1 + x)
     except:
         return a
     
     if is_float_convertible(log_a):
-        new_exponent = mp.mpf(log_a) + y
+        new_exponent = float(log_a) + y
     else:
         try:
             new_exponent = addition(log_a, y)
@@ -1127,13 +1098,12 @@ def add_positive(a, b):
     return addlayer(new_exponent)
 
 def addition(a, b):
-    a, b = correct(a), correct(b)
     try:
-        a_float = mp.mpf(a)
-        b_float = mp.mpf(b)
-        if abs(a_float) < mp.mpf('5e307') and abs(b_float) < mp.mpf('5e307'):
+        a_float = float(a)
+        b_float = float(b)
+        if abs(a_float) < 5e307 and abs(b_float) < 5e307:
             return a_float + b_float
-    except:
+    except (ValueError, TypeError, OverflowError):
         pass
     
     sign_a, abs_a = get_sign_and_abs(a)
@@ -1161,11 +1131,9 @@ def addition(a, b):
         return apply_sign(result, sign_b)
 
 def subtract(a, b):
-    a, b = correct(a), correct(b)
     return addition(a, negate(b))
 
 def multiply(a, b):
-    a, b = correct(a), correct(b)
     sign_a, abs_a = get_sign_and_abs(a)
     sign_b, abs_b = get_sign_and_abs(b)
     sign = sign_a * sign_b
@@ -1174,10 +1142,10 @@ def multiply(a, b):
         return 0
 
     try:
-        a_float = mp.mpf(abs_a)
-        b_float = mp.mpf(abs_b)
+        a_float = float(abs_a)
+        b_float = float(abs_b)
         product = a_float * b_float
-        if not mp.isinf(product) and abs(product) < mp.mpf('1e308'):
+        if not math.isinf(product) and abs(product) < 1e308:
             return apply_sign(product, sign)
     except (ValueError, TypeError, OverflowError):
         pass
@@ -1195,7 +1163,6 @@ def multiply(a, b):
         return "Error doing multiplication"
 
 def division(a, b):
-    a, b = correct(a), correct(b)
     sign_a, abs_a = get_sign_and_abs(a)
     sign_b, abs_b = get_sign_and_abs(b)
     sign = sign_a * sign_b
@@ -1206,10 +1173,10 @@ def division(a, b):
         return 0
 
     try:
-        a_float = mp.mpf(abs_a)
-        b_float = mp.mpf(abs_b)
+        a_float = float(abs_a)
+        b_float = float(abs_b)
         quotient = a_float / b_float
-        if not mp.isinf(quotient) and abs(quotient) < mp.mpf('1e308'):
+        if not math.isinf(quotient) and abs(quotient) < 1e308:
             return apply_sign(quotient, sign)
     except (ValueError, TypeError, OverflowError):
         pass
@@ -1232,9 +1199,9 @@ def power(a, b):
 
     if sign_a == -1:
         try:
-            b_float = mp.mpf(b)
-            if abs(b_float - mp.nint(b_float)) < mp.mpf('1e-10'):
-                exponent_int = int(mp.nint(b_float))
+            b_float = float(b)
+            if abs(b_float - round(b_float)) < 1e-10:
+                exponent_int = int(round(b_float))
                 sign_result = -1 if exponent_int % 2 == 1 else 1
                 abs_result = power(abs_a, b)
                 return apply_sign(abs_result, sign_result)
@@ -1255,8 +1222,7 @@ def power(a, b):
         return "Error doing power"
  
 def exp(x):
-    x = correct(x)
-    return pow(mp.mpf(mp.e), x)
+	return pow(2.7182818284590452,x)
 
 def root(a, b):
     a, b = correct(a), correct(b)
@@ -1265,17 +1231,17 @@ def root(a, b):
     return power(a, division(1, b))
 
 def sqrt(x):
-    x = correct(x)
+    x=correct(x)
     return root(x, 2)
 
 def factorial(n):
-    n = correct(n)
+    n= correct(n)
     sign, abs_n = get_sign_and_abs(n)
     if sign == -1:
         return "Factorial can't be negative"
     
     try:
-        n_val = mp.mpf(abs_n)
+        n_val = float(abs_n)
     except (TypeError, OverflowError, ValueError):
         n_val = str(abs_n)
     
@@ -1284,44 +1250,43 @@ def factorial(n):
 
     try:
         if n_val < 170:
-            return mp.gamma(n_val + 1)
+            return math.gamma(n_val + 1)
     except (ValueError, TypeError, OverflowError):
         pass
     if gt(n_val, "e1000000000000") == True:
         return addlayer(n_val)
     else:
         term1 = multiply(addition(n_val, 0.5), log(n_val))
-        term2 = negate(multiply(n_val, mp.mpf('0.4342944819032518')))
-        total_log = addition(addition(term1, term2), mp.mpf('0.3990899341790575'))
+        term2 = negate(multiply(n_val, 0.4342944819032518))
+        total_log = addition(addition(term1, term2), 0.3990899341790575)
         return addlayer(total_log)
  
 def gamma(x):
-    x = correct(x)
-    return fact(sub(x,1))
+	x = correct(x)
+	return fact(sub(x,1))
 
 def floor(x):
-    x = correct(x)
-    try:
-        return mp.floor(x)
-    except:
-        return x
+	x= correct(x)
+	try:
+		return math.floor(x)
+	except:
+		return x
 
 def ceil(x):
-    x = correct(x)
-    try:
-        return mp.ceil(x)
-    except:
-        return x
+	x = correct(x)
+	try:
+		return math.ceil(x)
+	except:
+		return x
 
 def lambertw(z):
     z = correct(z)
     if lte(z, 0):
         raise ValueError("Asymptotic expansion valid only for positive z >> 1")
-    elif gte(z, "ee6"):
-        return mul(log(z), mp.mpf('2.302585092994046'))
-
-    L1 = ln(z)
-    L2 = ln(L1)
+    elif gte(z,"ee6"):
+        return mul(log(z), 2.302585092994046)
+    L1 = log(z)
+    L2 = log(L1)
 
     termC = div(L2, L1)
     numeratorD = mul(L2, sub(-2, L2))
@@ -1332,23 +1297,6 @@ def lambertw(z):
     part2 = add(termC, termD)
 
     return add(part1, part2)
-
-def ooms(start, end, time=1):
-    if gt(start, end): 
-        raise ValueError("OoMs error: start for the OoMs cant be more than the end")
-    slg_end = slog(end)
-    slg_start = slog(start)
-    slg_fl_start = mp.floor(slg_start)
-    slg_fl_end = mp.floor(slg_end)
-    x = (tetr(10, slg_end-(slg_fl_end-1)) - tetr(10, slg_start-(slg_fl_start-1))) / mp.mpf(time)
-    if x < 1 and slg_fl_end-2 < 0:
-        y = slg_fl_end-2
-        x = round(mp.power(10, x), 6)
-    else:
-        y = slg_fl_end-1
-        x = round(x, 6)
-    return f"{x} OoMs^{y}"
-
 # Comparisons
 def gt(a, b):
     a, b = correct(a), correct(b)
@@ -1362,7 +1310,7 @@ def gt(a, b):
         a_slog = slog(abs_a)
         b_slog = slog(abs_b)
         try:
-            if mp.isnan(a_slog) or mp.isnan(b_slog) or isinstance(a_slog, str) or isinstance(b_slog, str):
+            if math.isnan(a_slog) or math.isnan(b_slog) or isinstance(a_slog, str) or isinstance(b_slog, str):
                 return False
         except:
             return False
@@ -1373,13 +1321,13 @@ def gt(a, b):
             return False
         else:
             if is_float_convertible(abs_a) and is_float_convertible(abs_b):
-                return mp.mpf(abs_a) > mp.mpf(abs_b)
+                return float(abs_a) > float(abs_b)
             else:
                 return False
     else:
         a_slog = slog(abs_a)
         b_slog = slog(abs_b)
-        if mp.isnan(a_slog) or mp.isnan(b_slog) or isinstance(a_slog, str) or isinstance(b_slog, str):
+        if math.isnan(a_slog) or math.isnan(b_slog) or isinstance(a_slog, str) or isinstance(b_slog, str):
             return False
         if a_slog < b_slog:
             return True
@@ -1387,7 +1335,7 @@ def gt(a, b):
             return False
         else:
             if is_float_convertible(abs_a) and is_float_convertible(abs_b):
-                return mp.mpf(abs_a) < mp.mpf(abs_b)
+                return float(abs_a) < float(abs_b)
             else:
                 return False
 
@@ -1410,16 +1358,16 @@ def eq(a, b):
         return False
     
     try:
-        if mp.isnan(a_slog) or mp.isnan(b_slog) or isinstance(a_slog, str) or isinstance(b_slog, str):
+        if math.isnan(a_slog) or math.isnan(b_slog) or isinstance(a_slog, str) or isinstance(b_slog, str):
             return False
     except:
         return False
     
-    if abs(a_slog - b_slog) > mp.mpf('1e-10'):
+    if abs(a_slog - b_slog) > 1e-10:
         return False
     
     if is_float_convertible(abs_a) and is_float_convertible(abs_b):
-        return abs(mp.mpf(abs_a) - mp.mpf(abs_b)) < mp.mpf('1e-10')
+        return abs(float(abs_a) - float(abs_b)) < 1e-10
     return True
 
 def gte(a, b):
@@ -1431,18 +1379,18 @@ def lte(a, b):
     return not gt(a, b)
 
 def max(a,b):
-    a, b = correct(a), correct(b)
-    if gte(a,b):
-        return a
-    else:
-        return b
+	a, b = correct(a), correct(b)
+	if gte(a,b):
+		return a
+	else:
+		return b
 
 def min(a,b):
-    a, b = correct(a), correct(b)
-    if lte(a,b):
-        return a
-    else:
-        return b
+	a, b = correct(a), correct(b)
+	if lte(a,b):
+		return a
+	else:
+		return b
 # Short names
 def fact(x): return factorial(x)
 def pow(a, b): return power(a, b)
@@ -1455,7 +1403,7 @@ def div(a, b): return division(a, b)
 # Formats
 def hyper_e(tet, decimals=format_decimals):
     tet = correct(tet)
-    if isinstance(tet, (int, float, mp.mpf)):
+    if isinstance(tet, (int, float)):
         return comma_format(tet, decimals)
     tet_str = str(tet)
     if tet_str.startswith("10^^"):
@@ -1476,28 +1424,28 @@ def hyper_e(tet, decimals=format_decimals):
     if idx > 0:
         mant_str = tet_str[idx:]
         try:
-            mant_val = mp.mpf(mant_str)
+            mant_val = float(mant_str)
             if idx > 1:
                 return f"E{comma_format(mant_val, decimals)}#{idx}"
             else:
                 return f"{comma_format(addlayer(mant_val), decimals)}"
-        except Exception:
+        except ValueError:
             pass
     return tet_str
 
 def format(tet, decimals=format_decimals):
     tet = correct(tet)
-    if isinstance(tet, (int, float, mp.mpf)):
-        return strip_trailing_zeros(comma_format(tet, decimals))
+    if isinstance(tet, (int, float)):
+        return comma_format(tet, decimals)
     tet_str = tet
     if tet_str.startswith("10^^"):
-        height = mp.mpf(tet_str[4:])
-        return f"F{strip_trailing_zeros(comma_format(height, 6))}"
+        height = float(tet_str[4:])
+        return f"F{comma_format(height, 6)}"
     try:
-        val = mp.mpf(tet_str)
-        if abs(val) < mp.mpf('1e308'):
-            return strip_trailing_zeros(comma_format(val, decimals))
-    except Exception:
+        val = float(tet_str)
+        if abs(val) < 1e308:
+            return comma_format(val, decimals)
+    except ValueError:
         pass
     if tet_str.startswith("(10^)^"):
         parts = tet_str.split(' ', 1)
@@ -1505,16 +1453,15 @@ def format(tet, decimals=format_decimals):
             head, mant = parts
             try:
                 layers = int(head[len("(10^)^"):])
-                mant_val = mp.mpf(mant)
-                if abs(mant_val - mp.mpf('1e10')) < mp.mpf('1e-5'):
-                    return f"F{strip_trailing_zeros(comma_format(layers + 2, 6))}"
-                elif mant_val < mp.mpf('10'):
-                    mant_str = mp.nstr(mant_val, decimals+2)
-                    return f"{mant_str}F{strip_trailing_zeros(comma_format(layers, 0))}"
-                elif mant_val < mp.mpf('1e10'):
-                    return f"{mp.nstr(mp.log10(mant_val), decimals+2)}F{strip_trailing_zeros(comma_format(layers + 1, 0))}"
+                mant_val = float(mant)
+                if abs(mant_val - 1e10) < 1e-5:
+                    return f"F{comma_format(layers + 2, 6)}"
+                elif mant_val < 10:
+                    return f"{mant_val:.{decimals}f}F{comma_format(layers, 0)}"
+                elif mant_val < 1e10:
+                    return f"{math.log10(mant_val):.{decimals}f}F{comma_format(layers + 1, 0)}"
                 else:
-                    return f"{mp.nstr(mp.log10(mp.log10(mant_val)), decimals+2)}F{strip_trailing_zeros(comma_format(layers + 2, 0))}"
+                    return f"{math.log10(math.log10(mant_val)):.{decimals}f}F{comma_format(layers + 2, 0)}"
             except ValueError:
                 pass
     if tet_str.startswith('e'):
@@ -1527,37 +1474,37 @@ def format(tet, decimals=format_decimals):
             mant_str = rest[:exp_pos]
             exp_str = rest[exp_pos+1:]
             try:
-                mant_f = mp.mpf(mant_str)
+                mant_f = float(mant_str)
                 exp_i = int(exp_str)
-                return f"{'e'*idx}{strip_trailing_zeros(comma_format(mant_f, decimals))}e{strip_trailing_zeros(comma_format(exp_i, 0))}"
-            except Exception:
+                return f"{'e'*idx}{comma_format(mant_f, decimals)}e{comma_format(exp_i, 0)}"
+            except ValueError:
                 pass
         try:
-            mant = mp.mpf(rest)
-            return f"{'e'*idx}{strip_trailing_zeros(comma_format(mant, decimals))}"
-        except Exception:
+            mant = float(rest)
+            return f"{'e'*idx}{comma_format(mant, decimals)}"
+        except ValueError:
             pass
     return tet_str
 
 def power10_tower(tet, max_layers=max_layer, decimals=format_decimals):
     tet = correct(tet)
     s = slog(tet)
-    if mp.isnan(s) or mp.isinf(s) or isinstance(s, str):
+    if math.isnan(s) or math.isinf(s) or isinstance(s, str):
         return "NaN"
     if s > max_layers:
         return "10^^" + comma_format(s)
-    height = int(mp.floor(s))
+    height = int(math.floor(s))
     frac = s - height
     if height <= 0:
         return frac
     mant = addlayer(frac, 2)
-    expr = comma_format(mant, decimals)
+    expr = comma_format(float(mant), decimals)
     for _ in range(height - 1):
         expr = f"10^{expr}"
     return expr
 
-def letter(s: str) -> str:
-    s = correct(s)
+def letter(s: str, decimals = format_decimals) -> str:
+    s =correct(s)
     try:
         s = format_float_scientific(s)
     except:
@@ -1566,122 +1513,157 @@ def letter(s: str) -> str:
         s = correct(s)
     if s.startswith("10^^") or s.startswith("(10^)^"):
         return format(s)
-
     if 'e' in s and not s.startswith('e') and not s.startswith("10^^") and not s.startswith("(10^)^"):
         parts = s.split('e', 1)
         if len(parts) == 2:
             try:
-                mantissa = mp.mpf(parts[0])
+                mantissa = float(parts[0])
                 exponent_str = parts[1]
-
                 if exponent_str.lstrip('-').lstrip('+').isdigit():
-                    exponent_val = mp.mpf(exponent_str)
+                    exponent_int = int(exponent_str)
+                    exponent_val = exponent_int
+                    leftover = exponent_val % 3
+                    group = exponent_val // 3 - 1
+                    new_mantissa = mantissa * (10 ** leftover)
+                    if new_mantissa >= 950:
+                        new_mantissa = 1
+                        group += 1
+                    if abs(new_mantissa - round(new_mantissa)) < 1e-5:
+                        formatted = str(int(round(new_mantissa)))
+                    else:
+                        formatted = f"{comma_format(new_mantissa, decimals)}".rstrip('0').rstrip('.')
+                    if group < 0:
+                        value = mantissa * (10 ** exponent_val)
+                        return str(int(value)) if value.is_integer() else f"{comma_format(value, decimals)}"
+                    elif group == 0:
+                        return formatted + "K"
+                    elif group == 1:
+                        return formatted + "M"
+                    elif group == 2:
+                        return formatted + "B"
+                    else:
+                        suffix = get_short_scale_suffix(group)
+                        return formatted + suffix
                 else:
-                    exponent_val = mp.mpf(exponent_str)
-
-                leftover = mp.fmod(exponent_val, 3)  # high precision remainder
-                group = mp.floor(exponent_val / 3) - 1  # high precision division
-
-                new_mantissa = mantissa * mp.power(10, leftover)
-                if new_mantissa >= mp.mpf('950'):
-                    new_mantissa = mp.mpf(1)
-                    group += 1
-
-                if abs(new_mantissa - mp.nint(new_mantissa)) < mp.mpf('1e-5'):
-                    formatted = str(int(mp.nint(new_mantissa)))
-                else:
-                    formatted = mp.nstr(new_mantissa, 3).rstrip('0').rstrip('.')
-
-                if group < 0:
-                    value = mantissa * mp.power(10, exponent_val)
-                    if mp.floor(value) == value:
-                        return str(int(value))
-                    return mp.nstr(value, 3)
-                elif group == 0:
-                    return formatted + "K"
-                elif group == 1:
-                    return formatted + "M"
-                elif group == 2:
-                    return formatted + "B"
-                else:
-                    suffix = get_short_scale_suffix(int(group))
-                    return formatted + suffix
-            except Exception:
+                    exponent = float(exponent_str)
+                    if exponent.is_integer():
+                        exponent_int = int(exponent)
+                        leftover = exponent_int % 3
+                        group = exponent_int // 3 - 1
+                        new_mantissa = mantissa * (10 ** leftover)
+                        if new_mantissa >= 950:
+                            new_mantissa = 1
+                            group += 1
+                        if abs(new_mantissa - round(new_mantissa)) < 1e-5:
+                            formatted = str(int(round(new_mantissa)))
+                        else:
+                            formatted = f"{comma_format(new_mantissa, decimals)}".rstrip('0').rstrip('.')
+                        if group < 0:
+                            value = mantissa * (10 ** exponent_int)
+                            return str(int(value)) if value.is_integer() else f"{comma_format(value, decimals)}"
+                        elif group == 0:
+                            return formatted + "K"
+                        elif group == 1:
+                            return formatted + "M"
+                        elif group == 2:
+                            return formatted + "B"
+                        else:
+                            suffix = get_short_scale_suffix(group)
+                            return formatted + suffix
+            except (ValueError, OverflowError): 
                 pass
-
     k = 0
     while k < len(s) and s[k] == 'e':
         k += 1
     rest = s[k:]
-
-    if k == 0:
+    
+    if k == 0: 
         return s
     try:
-        exponent_val = mp.mpf(rest)
-        if exponent_val < 0:
-            return "0"
-    except Exception:
+        if rest.lstrip('-').lstrip('+').isdigit():
+            exponent_val = int(rest)
+        else:
+            exponent_val = float(rest)
+        if exponent_val < 0: return "0"
+    except (ValueError, OverflowError): 
         return s
 
     if k == 1:
         if gt(exponent_val, suffix_max):
-            return "e(" + str(letter(exponent_val)) + ")"
-
-        if mp.floor(exponent_val) == exponent_val:
-            leftover = mp.fmod(exponent_val, 3)
-            group = mp.floor(exponent_val / 3) - 1
-        else:
-            leftover = mp.fmod(exponent_val, 3)
-            group = mp.floor(exponent_val / 3) - 1
-
-        if group < 0:
-            value = mp.power(10, exponent_val)
-            if mp.floor(value) == value:
-                return str(int(value))
+            return "e(" + str(letter(exponent_val)) + ")"        
+        if isinstance(exponent_val, int) or (isinstance(exponent_val, float) and exponent_val.is_integer()):
+            exponent_val_int = int(exponent_val)
+            leftover = exponent_val_int % 3
+            group = exponent_val_int // 3 - 1
+            if group < 0:
+                value = 10 ** exponent_val_int
+                return str(int(value)) if value.is_integer() else f"{comma_format(value, decimals)}"
+            mantissa_val = 10 ** leftover         
+            if mantissa_val >= 950:
+                mantissa_val = 1
+                group += 1
+            if abs(mantissa_val - round(mantissa_val)) < 1e-13:
+                formatted = str(int(round(mantissa_val)))
             else:
-                return mp.nstr(value, 3)
-
-        mantissa_val = mp.power(10, leftover)
-        if mantissa_val >= mp.mpf('999.99'):
-            mantissa_val = mp.mpf(1)
-            group += 1
-
-        if abs(mantissa_val - mp.nint(mantissa_val)) < mp.mpf('1e-5'):
-            formatted = str(int(mp.nint(mantissa_val)))
+                formatted = f"{comma_format(mantissa_val, decimals)}".rstrip('0').rstrip('.')
+            if group == 0:
+                return formatted + "K"
+            elif group == 1:
+                return formatted + "M"
+            elif group == 2:
+                return formatted + "B"
+            else:
+                suffix = get_short_scale_suffix(int(group))
+                return formatted + suffix
         else:
-            formatted = mp.nstr(mantissa_val, 3).rstrip('0').rstrip('.')
-
-        if group == 0:
-            return formatted + "K"
-        elif group == 1:
-            return formatted + "M"
-        elif group == 2:
-            return formatted + "B"
-        else:
-            suffix = get_short_scale_suffix(int(group))
-            return formatted + suffix
-
+            leftover = exponent_val % 3
+            group = exponent_val // 3 - 1
+            if group < 0:
+                value = 10 ** exponent_val
+                return str(int(value)) if value.is_integer() else f"{comma_format(value, decimals)}"
+            mantissa_val = 10 ** leftover
+            if mantissa_val >= 950:
+                mantissa_val = 1
+                group += 1
+            if abs(mantissa_val - round(mantissa_val)) < 1e-13:
+                formatted = str(int(round(mantissa_val)))
+            else:
+                formatted = f"{comma_format(mantissa_val, decimals)}".rstrip('0').rstrip('.')
+            if group == 0:
+                return formatted + "K"
+            elif group == 1:
+                return formatted + "M"
+            elif group == 2:
+                return formatted + "B"
+            else:
+                suffix = get_short_scale_suffix(int(group))
+                return formatted + suffix
     if k == 2:
         try:
-            exponent_val = mp.mpf(rest)
-            threshold = int(mp.ceil(mp.log10(suffix_max + 1))) if suffix_max > 0 else 0
+            if rest.lstrip('-').lstrip('+').isdigit():
+                exponent_val = int(rest)
+            else:
+                exponent_val = float(rest)
+            if suffix_max > 0:
+                threshold = math.ceil(math.log10(suffix_max + 1))
+            else:
+                threshold = 0
 
             if exponent_val >= threshold:
                 return 'e(' + letter("e" + rest) + ')'
             else:
-                power_val = mp.power(10, exponent_val)
-                try:
-                    power_int = int(power_val)
-                    group_index = (power_int - 3) // 3
-                    suffix = get_short_scale_suffix(int(group_index))
-                    return "10" + suffix
-                except Exception:
-                    return 'e(' + letter("e" + rest) + ')'
-        except Exception:
+                if isinstance(exponent_val, int):
+                    power_val = 10 ** exponent_val
+                else:
+                    power_val = 10.0 ** exponent_val
+                group_index = (power_val - 3) // 3
+                suffix = get_short_scale_suffix(int(group_index))
+                return "10" + suffix
+        except (ValueError, OverflowError):
             return 'e(' + letter("e" + rest) + ')'
 
     return fix_letter_output((k-2)*'e' + '(' + letter("ee" + rest) + ')')
-def suffix_to_scientific(input_str: str) -> str:
+def suffix_to_scientific(input_str: str, decimals = format_decimals) -> str:
     i = 0
     has_dot = False
     while i < len(input_str):
@@ -1696,164 +1678,121 @@ def suffix_to_scientific(input_str: str) -> str:
         else:
             break
     if i == 0:
-        mantissa_val = mp.mpf('1.0')
+        mantissa_val = 1.0
         suffix_str = input_str
     else:
         mantissa_part = input_str[:i]
         suffix_str = input_str[i:]
         try:
-            mantissa_val = mp.mpf(mantissa_part)
-        except Exception:
-            mantissa_val = mp.mpf('1.0')
+            mantissa_val = float(mantissa_part)
+        except:
+            mantissa_val = 1.0
             suffix_str = input_str
-
-    additional_exponent = mp.mpf('0')
+    
+    additional_exponent = 0
     if suffix_str:
         try:
             n = parse_suffix(suffix_str)
-            additional_exponent = mp.mpf(3) * (mp.mpf(n) + 1)
-        except Exception:
-            additional_exponent = mp.mpf('0')
-
+            additional_exponent = 3 * (n + 1)
+        except Exception as e:
+            additional_exponent = 0
+    
     if mantissa_val == 0:
         return "0"
-
+    
     try:
-        k = int(mp.floor(mp.log10(abs(mantissa_val))))
-    except Exception:
+        k = math.floor(math.log10(abs(mantissa_val)))
+    except:
         k = 0
-    total_exponent = mp.mpf(k) + additional_exponent
-    new_mantissa = mantissa_val / mp.power(10, k)
-
-    if abs(new_mantissa - mp.nint(new_mantissa)) < mp.mpf('1e-5'):
-        mantissa_output = str(int(mp.nint(new_mantissa)))
+    total_exponent = k + additional_exponent
+    new_mantissa = mantissa_val / (10 ** k)
+    
+    if abs(new_mantissa - round(new_mantissa)) < 1e-5:
+        mantissa_output = str(int(round(new_mantissa)))
     else:
-        formatted = mp.nstr(new_mantissa, 3)
+        formatted = f"{comma_format(new_mantissa, decimals)}"
         if '.' in formatted:
             formatted = formatted.rstrip('0').rstrip('.')
         mantissa_output = formatted
-
+    
     if mantissa_output == "1":
         return "1e" + str(int(total_exponent))
     else:
         return mantissa_output + "1e" + str(int(total_exponent))
 
 # Code helpers
-def strip_trailing_zeros(num_str):
-    if '.' in num_str:
-        num_str = num_str.rstrip('0').rstrip('.')
-    return num_str
-
 def comma_format(number, decimals=format_decimals):
     try:
-        num = mp.mpf(number)
-    except Exception:
+        num_float = float(number)
+        if abs(num_float) < 1e-3 or abs(num_float) >= 1e12:
+            s = f"{num_float:.{decimals}e}"
+            if 'e' in s:
+                mant, exp = s.split('e')
+                exp = exp.lstrip('+').lstrip('0') or '0'
+                return f"{mant}e{exp}"
+            return s
+        return f"{num_float:,.{decimals}f}"
+    except:
         return str(number)
-    if abs(num) < mp.mpf('1e-3') or abs(num) >= mp.mpf('1e12'):
-        if num == 0:
-            return "0"
-        sign = "-" if num < 0 else ""
-        num_abs = abs(num)
-        exp = int(mp.floor(mp.log10(num_abs)))
-        mant = num_abs / mp.power(10, exp)
-        mant_str = mp.nstr(mant, decimals + 2)
-        if '.' in mant_str:
-            parts = mant_str.split('.')
-            frac = parts[1][:decimals]
-            mant_str = parts[0] + (('.' + frac) if frac else '')
-            mant_str = mant_str.rstrip('0').rstrip('.')
-        return f"{sign}{mant_str}e{exp}"
-    sign = "-" if num < 0 else ""
-    num_abs = abs(num)
-    int_part = int(mp.floor(num_abs))
-    frac_part = num_abs - mp.mpf(int_part)
-    frac_scaled = mp.nint(frac_part * mp.power(10, decimals))
-    frac_str = str(int(frac_scaled)).rjust(decimals, '0') if decimals > 0 else ""
-    int_str = str(int_part)
-    int_parts = []
-    while len(int_str) > 3:
-        int_parts.insert(0, int_str[-3:])
-        int_str = int_str[:-3]
-    int_parts.insert(0, int_str)
-    int_with_commas = ",".join(int_parts)
-    if decimals > 0:
-        return f"{sign}{int_with_commas}.{frac_str}"
-    else:
-        return f"{sign}{int_with_commas}"
 
-def format_int_scientific(n: int, sig_digits: int = 16) -> str:
-    n_m = mp.mpf(n)
-    s = mp.nstr(n_m, sig_digits)
-    if n_m == 0:
-        return "0"
-    exp = int(mp.floor(mp.log10(abs(n_m))))
-    mant = n_m / mp.power(10, exp)
-    mant_str = mp.nstr(mant, sig_digits).rstrip('0').rstrip('.')
-    return f"{mant_str}e{exp}"
+def format_int_scientific(n: int, sig_digits: int = 15) -> str:
+    s = f"{n:.{sig_digits}e}"
+    mant, exp = s.split('e')
+    mant = mant.rstrip('0').rstrip('.')
+    exp = exp.lstrip('+').lstrip('0') or '0'
+    return f"{mant}e{exp}"
 
-def format_float_scientific(x, sig_digits: int = 16) -> str:
-    try:
-        x_m = mp.mpf(x)
-    except Exception:
+def format_float_scientific(x: float, sig_digits: int = 15) -> str:
+    if float(x) <= 0 or math.isinf(float(x)) or math.isnan(float(x)):
         return str(x)
-    if x_m <= 0 or mp.isinf(x_m) or mp.isnan(x_m):
-        return str(x)
-    exp = int(mp.floor(mp.log10(abs(x_m))))
-    mant = x_m / mp.power(10, exp)
-    mant_str = mp.nstr(mant, sig_digits).rstrip('0').rstrip('.')
+    exp = math.floor(math.log10(abs(float(x))))
+    mant = float(x) / (10 ** exp)
+    mant_str = f"{mant:.{sig_digits}g}".rstrip('0').rstrip('.')
     return f"{mant_str}e{exp}"
-
 def correct(x):
-    if not isinstance(x, (int, float, mp.mpf)):
+    if not isinstance(x, (int, float)):
         x = str(x).replace(",", "").strip()
-    if isinstance(x, (int, float, mp.mpf)):
-        return x
-    x = str(x)
-    if isinstance(x, str):
-        x = x.strip()
-        if "F" in x:
-            f_index = x.find("F")
-            if f_index > 0:
-                before_f = x[:f_index]
-                after_f = x[f_index+1:]
-                try:
-                    base = (before_f)
-                    exp = (after_f)
-                    x = "10^^" + str(exp + mp.log10(base))
-                except Exception:
-                    if x.startswith("F"):
-                        x = tetr(10,x[1:])
-            elif x.startswith("F"):
-                try:
-                    height = x[1:]
-                    return tetr(10, height)
-                except Exception:
-                    pass
-        if tetr(10, slog(x)) == "NaN":
-            return suffix_to_scientific(x)
-    return tetr(10, slog(x))
-def correct2(x):
-    if isinstance(x, (int, float, mp.mpf)):
-        return str(x)
-    x = x.strip()
-    if "F" in x:
-        f_index = x.find("F")
-        before_f = x[:f_index]
-        after_f = x[f_index+1:]
+    if isinstance(x, (int, float)):  
+        return x  
+    x = str(x).strip()
+    es = ""
+    i = 0
+    while i < len(x) and x[i] == "e":
+        es += "e"
+        i += 1
+
+    rest = x[i:]
+    if "e" in rest:
+        base_str, exp_str = rest.split("e", 1)
         try:
-            base = mp.mpf(before_f) if before_f else mp.mpf(1)
-            exp = mp.mpf(after_f)
-        except Exception:
-            return x
-        if base == 1:
-            return "10^^" + str(exp)
-        else:
-            val = exp + mp.log10(base)
-            return "10^^" + str(val)
-    if float(suffix_to_scientific(x)) > 1000:
-        return suffix_to_scientific(x)
-    
-    return x
+            base = float(base_str) if base_str else 1.0
+            exp = float(exp_str)
+            log_base = math.log10(base)
+            return correct("e" * (len(es) + 1) + str(exp + log_base))
+        except ValueError:
+            pass
+    if "F" in x:  
+        f_index = x.find("F")  
+        if f_index > 0:  
+            before_f = x[:f_index]  
+            after_f = x[f_index+1:]      
+            try:  
+                base = float(before_f)  
+                exp = float(after_f)  
+                x = "10^^" + str(exp + math.log10(base))  
+            except ValueError:  
+                if x.startswith("F"):  
+                    x = "10^^" + x[1:]  
+        elif x.startswith("F"):  
+            try:  
+                height = float(x[1:])  
+                return tetr(10, height)  
+            except ValueError:  
+                pass  
+
+    if tetr(10, slog(x)) == "NaN":  
+        return suffix_to_scientific(x)  
+    return tetr(10, slog(x))
 def fix_letter_output(s):
     cleaned = ''.join(c for c in s if c not in '()')
     e_count = 0
@@ -1876,7 +1815,7 @@ def get_short_scale_suffix(n: int) -> str:
         tens = (n % 100) // 10
         units = n % 10
         return FirstOnes[units] + SecondOnes[tens] + ThirdOnes[hundreds]
-
+    
     for i in range(len(MultOnes)-1, 0, -1):
         magnitude = 1000 ** i
         if n < magnitude:
@@ -1887,12 +1826,11 @@ def get_short_scale_suffix(n: int) -> str:
             count_str = ""
         else:
             count_str = get_short_scale_suffix(count)
-
+            
         rem_str = get_short_scale_suffix(remainder) if remainder > 0 else ""
         return count_str + MultOnes[i] + rem_str
-
+    
     return ""
-
 base_map = {}
 for hundreds in range(0, 10):
     for tens in range(0, 10):
@@ -1926,7 +1864,7 @@ def parse_suffix(s: str) -> int:
                 count_val = 1 if count_str == "" else parse_suffix(count_str)
                 index_val = mult_map[mult_str]
                 return count_val * (1000 ** index_val)
-            except Exception:
+            except:
                 continue
     for i in range(0, len(s) + 1):
         for mult_str in mult_strs_sorted:
@@ -1939,10 +1877,36 @@ def parse_suffix(s: str) -> int:
                     index_val = mult_map[mult_str]
                     result = count_val * (1000 ** index_val) + remainder_val
                     return result
-                except Exception:
+                except:
                     continue
     return f"Unrecognized suffix: {s}"
+def parse_equation(equation: str):
+    if "=" not in equation:
+        raise ValueError("Equation must contain '='.")
+    
+    lhs, rhs = equation.split("=", 1)
+    lhs = lhs.strip()
+    rhs = rhs.strip()
+    target = float(rhs)
+    return lhs, target
+
+
+def binary_search(expr: str, target: float, low=0, high=1e10, tol=1e-14):
+    while high - low > tol:
+        mid = (low + high) / 2
+        val = eval(expr, {"x": mid, **globals()})
+        if lt(val, target):
+            low = mid
+        else:
+            high = mid
+    return (low + high) / 2
+
+
+def solve_equation(equation: str):
+    expr, target = parse_equation(equation)
+    return binary_search(expr, target)
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
 
 
 
