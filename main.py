@@ -38,21 +38,14 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 STATE_FILE = "counting_state.json"
 
 state = {}
-
-
-
 # ---------------------
-
 # State Management
-
 # ---------------------
 
 def save_state():
     """Save the current counting state to disk."""
     with open(STATE_FILE, "w") as f:
         json.dump(state, f)
-
-
 
 def load_state():
     """Load the counting state from disk."""
@@ -63,8 +56,6 @@ def load_state():
     except FileNotFoundError:
         state = {}
 
-
-
 def get_guild_state(guild_id):
     """Get the state for a specific guild, or default if missing."""
     return state.get(str(guild_id), {
@@ -72,8 +63,6 @@ def get_guild_state(guild_id):
         "current_count": 0,
         "last_counter": None
     })
-
-
 
 def set_guild_state(guild_id, counting_channel_id, current_count, last_counter):
     """Update the guild state and save to file."""
@@ -112,168 +101,90 @@ async def setcount(ctx, number: int):
     await ctx.send(f"✅ Current count for {ctx.guild.name} has been set to **{number}**.")
 
 @setcount.error
-
 async def setcount_error(ctx, error):
-
     if isinstance(error, commands.MissingPermissions):
-
         await ctx.send("❌ You need to be an **Administrator** to set the count!")
-
     elif isinstance(error, commands.BadArgument):
-
         await ctx.send("❌ Please provide a valid integer. Example: `!setcount 42`")
 
 @bot.command()
-
 @commands.has_permissions(administrator=True)
-
 async def setcounting(ctx, channel: discord.TextChannel):
-
     """Set the channel for counting and reset the count."""
-
     guild_id = ctx.guild.id
-
     set_guild_state(guild_id, channel.id, 0, None)
-
     await ctx.send(f"✅ Counting channel set to {channel.mention}. Counter reset to 0.")
 
 
 
 @setcounting.error
-
 async def setcounting_error(ctx, error):
-
     if isinstance(error, commands.MissingPermissions):
-
         await ctx.send("❌ You need to be an **Administrator** to set the counting channel!")
 
-
-
 @bot.command()
-
 async def current(ctx):
-
     """Show the current count for this server."""
-
     guild_state = get_guild_state(ctx.guild.id)
-
     await ctx.send(
-
         f"🔹 Current count: **{guild_state['current_count']}**\n"
-
         f"📢 Channel: <#{guild_state['counting_channel_id']}>"
-
         if guild_state['counting_channel_id'] else "⚠ No counting channel set!"
-
     )
 
 @bot.event
-
 async def on_message(message):
-
     if message.author.bot or not message.guild:
-
         return
-
-
-
     guild_id = message.guild.id
-
     guild_state = get_guild_state(guild_id)
-
     counting_channel_id = guild_state['counting_channel_id']
-
     current_count = guild_state['current_count']
-
     last_counter = guild_state['last_counter']
 
-
-
     if counting_channel_id and message.channel.id == counting_channel_id:
-
         content = message.content.strip()
-
         if not content:
-
             return
 
-
-
         first_token = content.split()[0]
-
         safe_globals = {
-
             "__builtins__": {},
-
             "math": math,
             "tetration": tetration,
-
             "tetr": tetration,
-
             "fact": fact,
-
             "factorial": factorial,
-
             "gamma": gamma,
-
             "slog": slog,
-
             "addlayer": addlayer,
-
             "add": add,
-
             "addition": addition,
-
             "sub": sub,
-
             "subtract": subtract,
-
             "mul": mul,
-
             "multiply": multiply,
-
             "div": div,
-
             "division": division,
-
             "pow": pow,
-
             "power": power,
-
             "exp": exp,
-
             "lambertw": lambertw,
-
             "root": root,
-
             "sqrt": sqrt,
-
             "eq": eq,
-
             "lt": lt,
-
             "gte": gte,
-
             "gt": gt,
-
             "lte": lte,
-
             "min": min,
-
             "max": max,
-
             "floor": floor,
-
             "ceil": ceil,
-
             "log": log,
-
             "ln": ln,
-
             "logbase": logbase,
-
             "log": log
-
         }
 
         try:
@@ -447,86 +358,44 @@ async def calc(ctx, *, expression: str):
         expr = " ".join(tokens)
 
         safe_globals = {
-
             "__builtins__": {},
-
             "math": math,
             "tetration": tetration,
-
             "tetr": tetration,
-
             "fact": fact,
-
             "factorial": factorial,
-
             "gamma": gamma,
-
             "slog": slog,
-
             "addlayer": addlayer,
-
             "add": add,
-
             "addition": addition,
-
             "sub": sub,
-
             "subtract": subtract,
-
             "mul": mul,
-
             "multiply": multiply,
-
             "div": div,
-
             "division": division,
-
             "pow": pow,
-
             "power": power,
-
             "exp": exp,
-
             "lambertw": lambertw,
-
-
             "root": root,
-
             "sqrt": sqrt,
-
             "eq": eq,
-
             "lt": lt,
-
             "gte": gte,
-
             "gt": gt,
-
             "lte": lte,
-
             "min": min,
-
             "max": max,
-
             "floor": floor,
-
             "ceil": ceil,
-
             "log": log,
-
             "ln": ln,
-
             "logbase": logbase,
-
-            "log": log,
-            "ooms": ooms
+            "log": log
         }
-
-
-
         start_time = time.time()
-
-
 
         try:
 
@@ -1887,10 +1756,29 @@ def parse_suffix(s: str) -> int:
                 except:
                     continue
     return f"Unrecognized suffix: {s}"
+def parse_equation(equation: str):
+    if "=" not in equation:
+        raise ValueError("Equation must contain '='.")
+    
+    lhs, rhs = equation.split("=", 1)
+    lhs = lhs.strip()
+    rhs = rhs.strip()
+    target = float(rhs)
+    return lhs, target
+
+
+def binary_search(expr: str, target: float, low=0, high=1e10, tol=1e-14):
+    while high - low > tol:
+        mid = (low + high) / 2
+        val = eval(expr, {"x": mid, **globals()})
+        if lt(val, target):
+            low = mid
+        else:
+            high = mid
+    return (low + high) / 2
+
+
+def solve_equation(equation: str):
+    expr, target = parse_equation(equation)
+    return binary_search(expr, target)
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
-
-
-
-
-
-
