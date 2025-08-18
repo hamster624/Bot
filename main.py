@@ -136,6 +136,7 @@ async def current(ctx):
 async def on_message(message):
     if message.author.bot or not message.guild:
         return
+
     guild_id = message.guild.id
     guild_state = get_guild_state(guild_id)
     counting_channel_id = guild_state['counting_channel_id']
@@ -147,7 +148,9 @@ async def on_message(message):
         if not content:
             return
 
+        content = content.replace("^", "**")
         first_token = content.split()[0]
+
         safe_globals = {
             "__builtins__": {},
             "math": math,
@@ -183,71 +186,41 @@ async def on_message(message):
             "ceil": ceil,
             "log": log,
             "ln": ln,
-            "logbase": logbase,
-            "log": log
+            "logbase": logbase
         }
 
         try:
-
             value = eval(first_token, safe_globals, {})
-
-            value = round(float(value))
-
+            if value >= 0:
+                value = math.floor(float(value) + 0.5)
+            else:
+                value = math.ceil(float(value) - 0.5)
         except Exception:
-
-            # If the expression is invalid or unsupported, ignore the message
-
             return
-
-
 
         if message.author.id == last_counter:
-
             await message.channel.send(
-
                 f"❌ {message.author.mention}, you counted twice in a row and lost! The count resets to 1."
-
             )
-
             current_count = 0
-
             last_counter = None
-
             set_guild_state(guild_id, counting_channel_id, current_count, last_counter)
-
             return
 
-
-
         if value == current_count + 1:
-
             current_count += 1
-
             last_counter = message.author.id
-
             await message.add_reaction("✅")
-
         else:
-
             await message.channel.send(
-
                 f"❌ {message.author.mention} failed!\n"
-
                 f"➡ The next number is now **1**.\n"
-
                 f"🔹 Last successful number was **{current_count}**."
-
             )
-
             current_count = 0
-
             last_counter = None
 
-
-
         set_guild_state(guild_id, counting_channel_id, current_count, last_counter)
-
-
 
     await bot.process_commands(message)
 
@@ -316,46 +289,28 @@ async def guide(ctx):
 @bot.command()
 
 async def calc(ctx, *, expression: str):
-
     """
-
     Evaluate an expression.
-
     """
 
     formats = {
-
         "format": format,
-
         "power10_tower": power10_tower,
         "solve_equation": solve_equation,
         "correct": correct,
-
         "hyper_e": hyper_e,
-
         "letter": letter,
-
         "suffix_to_scientific": suffix_to_scientific,
-
     }
 
-
-
     try:
-
         tokens = expression.strip().split(" ")
-
         fmt_name = "format"
-
         if tokens[-1].lower() in formats:
-
             fmt_name = tokens[-1].lower()
-
             tokens = tokens[:-1]
 
-
-
-        expr = " ".join(tokens)
+        expr = " ".join(tokens).replace("^", "**")
 
         safe_globals = {
             "__builtins__": {},
@@ -392,44 +347,27 @@ async def calc(ctx, *, expression: str):
             "ceil": ceil,
             "log": log,
             "ln": ln,
-            "logbase": logbase,
-            "log": log
+            "logbase": logbase
         }
+
         start_time = time.time()
-
         try:
-
             value = eval(expr, safe_globals, {})
-
         except:
-
             value = expr
 
-
-
         result = formats[fmt_name](value)
-
-
-
         end_time = time.time()
-
         elapsed = end_time - start_time
 
-
-
         await ctx.reply(
-
             f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds",
-
             mention_author=False
-
         )
 
-
-
     except Exception as e:
-
         await ctx.reply(f"Error: `{e}`", mention_author=False)
+
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
@@ -1782,3 +1720,4 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
