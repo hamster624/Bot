@@ -1075,14 +1075,14 @@ def gamma(x):
 def floor(x):
 	x= correct(x)
 	try:
-		math.floor(x)
+		return math.floor(x)
 	except:
 		return x
 
 def ceil(x):
 	x = correct(x)
 	try:
-		math.ceil(x)
+		return math.ceil(x)
 	except:
 		return x
 
@@ -1104,26 +1104,6 @@ def lambertw(z):
     part2 = add(termC, termD)
 
     return add(part1, part2)
-def ooms(start, end, time=1):
-    if start > end:
-        raise ValueError("OoMs error: start for the OoMs can't be more than the end")
-
-    slg_end = slog(end)
-    slg_start = slog(start)
-
-    slg_fl_start = math.floor(slg_start)
-    slg_fl_end = math.floor(slg_end)
-
-    x = (tetr(10, slg_end - (slg_fl_end - 1)) - tetr(10, slg_start - (slg_fl_start - 1))) / time
-
-    if x < 1 and slg_fl_end - 2 < 0:
-        y = slg_fl_end - 2
-        x = round(10 ** x, 6)
-    else:
-        y = slg_fl_end - 1
-        x = round(x, 6)
-
-    return f"{x} OoMs^{y}"
 # Comparisons
 def gt(a, b):
     a, b = correct(a), correct(b)
@@ -1429,7 +1409,7 @@ def letter(s: str, decimals = format_decimals) -> str:
             if mantissa_val >= 950:
                 mantissa_val = 1
                 group += 1
-            if abs(mantissa_val - round(mantissa_val)) < 1e-5:
+            if abs(mantissa_val - round(mantissa_val)) < 1e-13:
                 formatted = str(int(round(mantissa_val)))
             else:
                 formatted = f"{comma_format(mantissa_val, decimals)}".rstrip('0').rstrip('.')
@@ -1452,7 +1432,7 @@ def letter(s: str, decimals = format_decimals) -> str:
             if mantissa_val >= 950:
                 mantissa_val = 1
                 group += 1
-            if abs(mantissa_val - round(mantissa_val)) < 1e-5:
+            if abs(mantissa_val - round(mantissa_val)) < 1e-13:
                 formatted = str(int(round(mantissa_val)))
             else:
                 formatted = f"{comma_format(mantissa_val, decimals)}".rstrip('0').rstrip('.')
@@ -1576,37 +1556,50 @@ def format_float_scientific(x: float, sig_digits: int = 15) -> str:
     mant = float(x) / (10 ** exp)
     mant_str = f"{mant:.{sig_digits}g}".rstrip('0').rstrip('.')
     return f"{mant_str}e{exp}"
-
 def correct(x):
     if not isinstance(x, (int, float)):
         x = str(x).replace(",", "").strip()
     if isinstance(x, (int, float)):  
         return x  
-    x = str(x)  
-    if isinstance(x, str):  
-        x = x.strip()  
-        if "F" in x:  
-            f_index = x.find("F")  
-            if f_index > 0:  
-                before_f = x[:f_index]  
-                after_f = x[f_index+1:]      
-                try:  
-                    base = float(before_f)  
-                    exp = float(after_f)  
-                    x = "10^^" + str(exp + math.log10(base))  
-                except ValueError:  
-                    if x.startswith("F"):  
-                        x = "10^^" + x[1:]  
-            elif x.startswith("F"):  
-                try:  
-                    height = float(x[1:])  
-                    return tetr(10, height)  
-                except ValueError:  
-                    pass  
-        if tetr(10, slog(x)) == "NaN":  
-            return suffix_to_scientific(x)  
-    return tetr(10, slog(x))
+    x = str(x).strip()
+    es = ""
+    i = 0
+    while i < len(x) and x[i] == "e":
+        es += "e"
+        i += 1
 
+    rest = x[i:]
+    if "e" in rest:
+        base_str, exp_str = rest.split("e", 1)
+        try:
+            base = float(base_str) if base_str else 1.0
+            exp = float(exp_str)
+            log_base = math.log10(base)
+            return correct("e" * (len(es) + 1) + str(exp + log_base))
+        except ValueError:
+            pass
+    if "F" in x:  
+        f_index = x.find("F")  
+        if f_index > 0:  
+            before_f = x[:f_index]  
+            after_f = x[f_index+1:]      
+            try:  
+                base = float(before_f)  
+                exp = float(after_f)  
+                x = "10^^" + str(exp + math.log10(base))  
+            except ValueError:  
+                if x.startswith("F"):  
+                    x = "10^^" + x[1:]  
+        elif x.startswith("F"):  
+            try:  
+                height = float(x[1:])  
+                return tetr(10, height)  
+            except ValueError:  
+                pass  
+
+    if tetr(10, slog(x)) == "NaN":  
+        return suffix_to_scientific(x)  
+    return tetr(10, slog(x))
 def fix_letter_output(s):
     cleaned = ''.join(c for c in s if c not in '()')
     e_count = 0
@@ -1720,4 +1713,5 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
 
