@@ -1715,3 +1715,4 @@ def solve_equation(equation: str):
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
 
 
+
