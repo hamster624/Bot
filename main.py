@@ -296,12 +296,12 @@ async def guide_slash(interaction: discord.Interaction):
 @bot.tree.command(name="calc", description="Evaluate an expression")
 @app_commands.describe(
     expression="Expression to evaluate",
-    format="Optional output format"
+    fmt="Optional output format"
 )
 async def calc_slash(
     interaction: discord.Interaction,
     expression: str,
-    format: str = "format"  # default format
+    fmt: str = "format"  # default format
 ):
     formats = {
         "format": format,
@@ -313,11 +313,17 @@ async def calc_slash(
         "suffix_to_scientific": suffix_to_scientific,
     }
 
-    # Defer to avoid Unknown interaction
+    # Defer to avoid interaction timeout
     await interaction.response.defer(thinking=True)
 
     try:
-        expr = expression.replace("^", "**")
+        tokens = expression.strip().split(" ")
+        fmt_name = fmt.lower() if fmt else "format"
+        if tokens[-1].lower() in formats:
+            fmt_name = tokens[-1].lower()
+            tokens = tokens[:-1]
+
+        expr = " ".join(tokens).replace("^", "**")
 
         safe_globals = {
             "__builtins__": {}, "math": math,
@@ -337,11 +343,10 @@ async def calc_slash(
         except Exception:
             value = expr
 
-        format_name = format.lower()
-        if format_name not in formats:
-            format_name = "format"
+        if fmt_name not in formats:
+            fmt_name = "format"
 
-        result = formats[format_name](value)
+        result = formats[fmt_name](value)
         elapsed = time.time() - start_time
 
         await interaction.followup.send(
@@ -349,7 +354,6 @@ async def calc_slash(
         )
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
-
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
@@ -1702,6 +1706,7 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token)
+
 
 
 
