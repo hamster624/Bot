@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import logging
 from dotenv import load_dotenv
 import os
@@ -7,28 +8,30 @@ import time
 import json
 from flask import Flask
 from threading import Thread
+import math
 
+# ---------------------
+# Flask Keep-Alive
+# ---------------------
 app = Flask('')
 @app.route('/')
-
 def home():
     return "I'm alive"
+
 def run():
     app.run(host='0.0.0.0', port=8080)
 
 def keep_alive():
     t = Thread(target=run)
     t.start()
+
 keep_alive()
 
 # ---------------------
 # Bot Setup
 # ---------------------
-
 load_dotenv()
-
 token = os.getenv('DISCORD_TOKEN')
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
 intents.guilds = True
 intents.messages = True
@@ -36,19 +39,16 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 STATE_FILE = "counting_state.json"
-
 state = {}
+
 # ---------------------
 # State Management
 # ---------------------
-
 def save_state():
-    """Save the current counting state to disk."""
     with open(STATE_FILE, "w") as f:
         json.dump(state, f)
 
 def load_state():
-    """Load the counting state from disk."""
     global state
     try:
         with open(STATE_FILE, "r") as f:
@@ -57,7 +57,6 @@ def load_state():
         state = {}
 
 def get_guild_state(guild_id):
-    """Get the state for a specific guild, or default if missing."""
     return state.get(str(guild_id), {
         "counting_channel_id": None,
         "current_count": 0,
@@ -65,7 +64,6 @@ def get_guild_state(guild_id):
     })
 
 def set_guild_state(guild_id, counting_channel_id, current_count, last_counter):
-    """Update the guild state and save to file."""
     state[str(guild_id)] = {
         "counting_channel_id": counting_channel_id,
         "current_count": current_count,
@@ -76,55 +74,35 @@ def set_guild_state(guild_id, counting_channel_id, current_count, last_counter):
 # ---------------------
 # Bot Events
 # ---------------------
-
 @bot.event
-
 async def on_ready():
     load_state()
+    await bot.tree.sync()
     print(f"✅ Logged in as {bot.user}")
 
+# ---------------------
+# Counting Commands
+# ---------------------
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setcount(ctx, number: int):
-    """Set the current count manually for this server."""
     guild_id = ctx.guild.id
     guild_state = get_guild_state(guild_id)
     if guild_state["counting_channel_id"] is None:
         await ctx.send("⚠ No counting channel set! Use `!setcounting #channel` first.")
         return
-    set_guild_state(
-        guild_id,
-        guild_state["counting_channel_id"],
-        number,
-        guild_state["last_counter"]
-    )
+    set_guild_state(guild_id, guild_state["counting_channel_id"], number, guild_state["last_counter"])
     await ctx.send(f"✅ Current count for {ctx.guild.name} has been set to **{number}**.")
-
-@setcount.error
-async def setcount_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("❌ You need to be an **Administrator** to set the count!")
-    elif isinstance(error, commands.BadArgument):
-        await ctx.send("❌ Please provide a valid integer. Example: `!setcount 42`")
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setcounting(ctx, channel: discord.TextChannel):
-    """Set the channel for counting and reset the count."""
     guild_id = ctx.guild.id
     set_guild_state(guild_id, channel.id, 0, None)
     await ctx.send(f"✅ Counting channel set to {channel.mention}. Counter reset to 0.")
 
-
-
-@setcounting.error
-async def setcounting_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("❌ You need to be an **Administrator** to set the counting channel!")
-
 @bot.command()
 async def current(ctx):
-    """Show the current count for this server."""
     guild_state = get_guild_state(ctx.guild.id)
     await ctx.send(
         f"🔹 Current count: **{guild_state['current_count']}**\n"
@@ -132,6 +110,9 @@ async def current(ctx):
         if guild_state['counting_channel_id'] else "⚠ No counting channel set!"
     )
 
+# ---------------------
+# Counting Logic (on_message)
+# ---------------------
 @bot.event
 async def on_message(message):
     if message.author.bot or not message.guild:
@@ -154,6 +135,7 @@ async def on_message(message):
         safe_globals = {
             "__builtins__": {},
             "math": math,
+            # Include all your original functions: tetration, fact, slog, etc.
             "tetration": tetration,
             "tetr": tetration,
             "fact": fact,
@@ -224,75 +206,28 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+# ---------------------
+# Calculator Commands (!calc)
+# ---------------------
 @bot.command()
-
 async def guide(ctx):
-
-    """
-
-    Displays all available operations and notations for the !calc command.
-
-    """
-
-    formats = [
-
-        "format",
-
-        "power10_tower",
-
-        "correct",
-
-        "hyper_e",
-
-        "letter",
-
-        "suffix_to_scientific"
-
-    ]
-
-
-
-    operations = [
-
-        "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
-
-        "log", "ln", "logbase", "slog", "lambertw",
-
-        "fact (factorial)", "gamma", "OoMs",
-
-        "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
-
-        "eq", "lt", "gt", "gte", "lte", "min", "max",
-
-        "floor", "ceil"
-
-     ]
-
-
-
-
+    formats = ["format","power10_tower","correct","hyper_e","letter","suffix_to_scientific"]
+    operations = ["tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+                  "log", "ln", "logbase", "slog", "lambertw",
+                  "fact (factorial)", "gamma", "OoMs",
+                  "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
+                  "eq", "lt", "gt", "gte", "lte", "min", "max",
+                  "floor", "ceil"]
 
     help_message = "**📘 !calc Help**\n\n"
-
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
-
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-
     help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower`"
-
-
 
     await ctx.send(help_message)
 
-
-
 @bot.command()
-
 async def calc(ctx, *, expression: str):
-    """
-    Evaluate an expression.
-    """
-
     formats = {
         "format": format,
         "power10_tower": power10_tower,
@@ -357,16 +292,87 @@ async def calc(ctx, *, expression: str):
             value = expr
 
         result = formats[fmt_name](value)
-        end_time = time.time()
-        elapsed = end_time - start_time
+        elapsed = time.time() - start_time
 
-        await ctx.reply(
-            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds",
-            mention_author=False
-        )
-
+        await ctx.reply(f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds", mention_author=False)
     except Exception as e:
         await ctx.reply(f"Error: `{e}`", mention_author=False)
+
+# ---------------------
+# Slash Commands (Hybrid)
+# ---------------------
+@bot.tree.command(name="calc", description="Evaluate an expression with format support")
+@app_commands.describe(expression="Expression to evaluate")
+async def calc_slash(interaction: discord.Interaction, expression: str):
+    formats = {
+        "format": format,
+        "power10_tower": power10_tower,
+        "solve_equation": solve_equation,
+        "correct": correct,
+        "hyper_e": hyper_e,
+        "letter": letter,
+        "suffix_to_scientific": suffix_to_scientific,
+    }
+
+    try:
+        tokens = expression.strip().split(" ")
+        fmt_name = "format"
+        if tokens[-1].lower() in formats:
+            fmt_name = tokens[-1].lower()
+            tokens = tokens[:-1]
+
+        expr = " ".join(tokens).replace("^", "**")
+
+        safe_globals = {
+            "__builtins__": {},
+            "math": math,
+            "tetration": tetration,
+            "tetr": tetration,
+            "fact": fact,
+            "factorial": factorial,
+            "gamma": gamma,
+            "slog": slog,
+            "addlayer": addlayer,
+            "add": add,
+            "addition": addition,
+            "sub": sub,
+            "subtract": subtract,
+            "mul": mul,
+            "multiply": multiply,
+            "div": div,
+            "division": division,
+            "pow": pow,
+            "power": power,
+            "exp": exp,
+            "lambertw": lambertw,
+            "root": root,
+            "sqrt": sqrt,
+            "eq": eq,
+            "lt": lt,
+            "gte": gte,
+            "gt": gt,
+            "lte": lte,
+            "min": min,
+            "max": max,
+            "floor": floor,
+            "ceil": ceil,
+            "log": log,
+            "ln": ln,
+            "logbase": logbase
+        }
+
+        start_time = time.time()
+        try:
+            value = eval(expr, safe_globals, {})
+        except:
+            value = expr
+
+        result = formats[fmt_name](value)
+        elapsed = time.time() - start_time
+
+        await interaction.response.send_message(f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"Error: `{e}`", ephemeral=True)
 
 import math
 # --Editable constants--
@@ -1713,6 +1719,7 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
 
 
 
