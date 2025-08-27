@@ -49,7 +49,7 @@ intents.guilds = True
 intents.messages = True
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
-
+TIMEOUT = 2
 STATE_FILE = "counting_state.json"
 state = {}
 
@@ -312,7 +312,7 @@ async def calc_slash(interaction: discord.Interaction, expression: str, fmt: str
 
         tokens = expression.strip().split(" ")
         fmt_name = fmt.lower() if fmt else "format"
-        if tokens[-1].lower() in formats:
+        if tokens and tokens[-1].lower() in formats:
             fmt_name = tokens[-1].lower()
             tokens = tokens[:-1]
 
@@ -326,22 +326,29 @@ async def calc_slash(interaction: discord.Interaction, expression: str, fmt: str
             "sub": sub, "subtract": subtract, "mul": mul, "multiply": multiply,
             "div": div, "division": division, "pow": pow, "power": power,
             "exp": exp, "lambertw": lambertw, "root": root, "sqrt": sqrt,
-            "eq": eq, "lt": lt, "gte": gte, "gt": gt, "lte": lte, "min": min, "max": max,
+            "eq": eq, "lt": lt, "gte": gte, "gt": gt, "lte": lte,
+            "min": min, "max": max,
             "floor": floor, "ceil": ceil, "log": log, "ln": ln, "logbase": logbase
         }
 
+        async def eval_expr():
+            return eval(expr, safe_globals, {})
+
         start_time = time.time()
         try:
-            value = eval(expr, safe_globals, {})
-        except Exception:
-            value = expr
+            value = await asyncio.wait_for(eval_expr(), timeout=TIMEOUT)
+        except asyncio.TimeoutError:
+            return "⚠️ Expression took too long to evaluate"
 
         if fmt_name not in formats:
             fmt_name = "format"
 
-        result = formats[fmt_name](value)
-        elapsed = time.time() - start_time
+        try:
+            result = formats[fmt_name](value)
+        except Exception as e:
+            result = f"❌ Error while formatting: {e}"
 
+        elapsed = time.time() - start_time
         return f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
 
     try:
@@ -1710,6 +1717,7 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token)
+
 
 
 
