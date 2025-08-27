@@ -9,7 +9,6 @@ import json
 from flask import Flask
 from threading import Thread
 import math
-import asyncio
 
 # ---------------------
 # Flask Keep-Alive
@@ -50,7 +49,6 @@ intents.guilds = True
 intents.messages = True
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
-TIMEOUT = 2
 STATE_FILE = "counting_state.json"
 state = {}
 
@@ -294,30 +292,31 @@ async def guide_slash(interaction: discord.Interaction):
 # ---------------------
 # Calculator Command (/calc)
 # ---------------------
-@bot.tree.command(name="calc", description="Evaluate an expression")
+@bot.tree.command(name="calc", description="Evaluate an expression with format support")
 @app_commands.describe(
     expression="Expression to evaluate",
     fmt="Optional output format"
 )
-async def calc_slash(interaction: discord.Interaction, expression: str, fmt: str = "format"):
-    async def run_calc(expression: str, fmt: str = "format"):
-        formats = {
-            "format": format,
-            "power10_tower": power10_tower,
-            "solve_equation": solve_equation,
-            "correct": correct,
-            "hyper_e": hyper_e,
-            "letter": letter,
-            "suffix_to_scientific": suffix_to_scientific,
-        }
+async def calc_slash(
+    interaction: discord.Interaction,
+    expression: str,
+    fmt: str = "format"  # default format
+):
+    formats = {
+        "format": format,
+        "power10_tower": power10_tower,
+        "solve_equation": solve_equation,
+        "correct": correct,
+        "hyper_e": hyper_e,
+        "letter": letter,
+        "suffix_to_scientific": suffix_to_scientific,
+    }
 
-        tokens = expression.strip().split(" ")
-        fmt_name = fmt.lower() if fmt else "format"
-        if tokens and tokens[-1].lower() in formats:
-            fmt_name = tokens[-1].lower()
-            tokens = tokens[:-1]
+    # Defer to avoid Unknown interaction
+    await interaction.response.defer(thinking=True)
 
-        expr = " ".join(tokens).replace("^", "**")
+    try:
+        expr = expression.replace("^", "**")
 
         safe_globals = {
             "__builtins__": {}, "math": math,
@@ -327,44 +326,28 @@ async def calc_slash(interaction: discord.Interaction, expression: str, fmt: str
             "sub": sub, "subtract": subtract, "mul": mul, "multiply": multiply,
             "div": div, "division": division, "pow": pow, "power": power,
             "exp": exp, "lambertw": lambertw, "root": root, "sqrt": sqrt,
-            "eq": eq, "lt": lt, "gte": gte, "gt": gt, "lte": lte,
-            "min": min, "max": max,
+            "eq": eq, "lt": lt, "gte": gte, "gt": gt, "lte": lte, "min": min, "max": max,
             "floor": floor, "ceil": ceil, "log": log, "ln": ln, "logbase": logbase
         }
 
-        async def eval_expr():
-            return eval(expr, safe_globals, {})
-
         start_time = time.time()
         try:
-            value = await asyncio.wait_for(eval_expr(), timeout=TIMEOUT)
-        except asyncio.TimeoutError:
-            return "⚠️ Expression took too long to evaluate"
+            value = eval(expr, safe_globals, {})
+        except Exception:
+            value = expr
 
+        fmt_name = fmt.lower()
         if fmt_name not in formats:
             fmt_name = "format"
 
-        try:
-            result = formats[fmt_name](value)
-        except Exception as e:
-            result = f"❌ Error while formatting: {e}"
-
+        result = formats[fmt_name](value)
         elapsed = time.time() - start_time
-        return f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
 
-    try:
-        result_message = await run_calc(expression, fmt)
-
-        if not interaction.response.is_done():
-            await interaction.response.send_message(result_message)
-        else:
-            await interaction.followup.send(result_message)
-
+        await interaction.followup.send(
+            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
+        )
     except Exception as e:
-        if not interaction.response.is_done():
-            await interaction.response.send_message(f"❌ Error: `{e}`")
-        else:
-            await interaction.followup.send(f"❌ Error: `{e}`")
+        await interaction.followup.send(f"❌ Error: `{e}`")
 
 import math
 # --Editable constants--
@@ -1718,6 +1701,7 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token)
+
 
 
 
