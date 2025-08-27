@@ -294,8 +294,15 @@ async def guide_slash(interaction: discord.Interaction):
 # Calculator Command (/calc)
 # ---------------------
 @bot.tree.command(name="calc", description="Evaluate an expression with format support")
-@app_commands.describe(expression="Expression to evaluate")
-async def calc_slash(interaction: discord.Interaction, expression: str):
+@app_commands.describe(
+    expression="Expression to evaluate",
+    format="Optional output format"
+)
+async def calc_slash(
+    interaction: discord.Interaction,
+    expression: str,
+    format: str = "format"  # default format
+):
     formats = {
         "format": format,
         "power10_tower": power10_tower,
@@ -305,17 +312,12 @@ async def calc_slash(interaction: discord.Interaction, expression: str):
         "letter": letter,
         "suffix_to_scientific": suffix_to_scientific,
     }
+
+    # Defer to avoid Unknown interaction
+    await interaction.response.defer(thinking=True)
+
     try:
-        # Defer immediately to avoid Unknown interaction
-        await interaction.response.defer(thinking=True)
-
-        tokens = expression.strip().split(" ")
-        fmt_name = "format"
-        if tokens[-1].lower() in formats:
-            fmt_name = tokens[-1].lower()
-            tokens = tokens[:-1]
-
-        expr = " ".join(tokens).replace("^", "**")
+        expr = expression.replace("^", "**")
 
         safe_globals = {
             "__builtins__": {}, "math": math,
@@ -335,13 +337,16 @@ async def calc_slash(interaction: discord.Interaction, expression: str):
         except Exception:
             value = expr
 
-        result = formats[fmt_name](value)
+        format_name = format.lower()
+        if format_name not in formats:
+            format_name = "format"
+
+        result = formats[format_name](value)
         elapsed = time.time() - start_time
 
         await interaction.followup.send(
             f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
         )
-
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
 
@@ -1697,6 +1702,7 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token)
+
 
 
 
