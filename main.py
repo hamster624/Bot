@@ -298,43 +298,59 @@ async def guide_slash(interaction: discord.Interaction):
     expression="The expression to evaluate",
     fmt="Optional output format"
 )
-async def calc_slash(interaction: discord.Interaction, expression: str, fmt: str = "format"):
-    formats = {
-        "format": format,
-        "power10_tower": power10_tower,
-        "solve_equation": solve_equation,
-        "correct": correct,
-        "hyper_e": hyper_e,
-        "letter": letter,
-        "suffix_to_scientific": suffix_to_scientific,
-    }
+@bot.tree.command(name="calc", description="Evaluate a math expression")
+async def calc_slash(interaction: discord.Interaction, expression: str):
+    start = time.perf_counter()
 
-    fmt = fmt.lower()
-    if fmt not in formats:
-        await interaction.response.send_message(f"❌ Unknown format `{fmt}`. Using default `format`.")
-        fmt = "format"
+    # Defer immediately to avoid interaction timeout
+    await interaction.response.defer(thinking=True)
 
-    expr = expression.replace("^", "**")
-    safe_globals = { "__builtins__": {}, "math": math,
-        "tetration": tetration, "tetr": tetration,
-        "fact": fact, "factorial": factorial, "gamma": gamma,
-        "slog": slog, "addlayer": addlayer, "add": add, "addition": addition,
-        "sub": sub, "subtract": subtract, "mul": mul, "multiply": multiply,
-        "div": div, "division": division, "pow": pow, "power": power,
-        "exp": exp, "lambertw": lambertw, "root": root, "sqrt": sqrt,
-        "eq": eq, "lt": lt, "gte": gte, "gt": gt, "lte": lte, "min": min, "max": max,
-        "floor": floor, "ceil": ceil, "log": log, "ln": ln, "logbase": logbase
-    }
-
-    start_time = time.time()
     try:
-        value = eval(expr, safe_globals, {})
-    except Exception:
-        value = expr
-    result = formats[fmt](value)
-    elapsed = time.time() - start_time
+        safe_globals = {
+            "__builtins__": {},
+            "math": math,
+            "tetration": tetration,
+            "tetr": tetration,
+            "fact": fact,
+            "factorial": factorial,
+            "gamma": gamma,
+            "slog": slog,
+            "addlayer": addlayer,
+            "add": add,
+            "addition": addition,
+            "sub": sub,
+            "subtract": subtract,
+            "mul": mul,
+            "multiply": multiply,
+            "div": div,
+            "division": division,
+            "pow": pow,
+            "power": power,
+            "exp": exp,
+            "lambertw": lambertw,
+            "root": root,
+            "sqrt": sqrt,
+            "eq": eq,
+            "lt": lt,
+            "gte": gte,
+            "gt": gt,
+            "lte": lte,
+            "min": min,
+            "max": max,
+            "floor": floor,
+            "ceil": ceil,
+            "log": log,
+            "ln": ln,
+            "logbase": logbase
+        }
 
-    await interaction.response.send_message(f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds")
+        result = eval(expression, safe_globals, {})
+        elapsed = time.perf_counter() - start
+        await interaction.followup.send(
+            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
+        )
+    except Exception as e:
+        await interaction.followup.send(f"❌ Error: `{e}`")
 
 import math
 # --Editable constants--
@@ -1688,4 +1704,5 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token)
+
 
