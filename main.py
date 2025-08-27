@@ -298,25 +298,18 @@ async def guide_slash(interaction: discord.Interaction):
     expression="Expression to evaluate",
     fmt="Optional output format"
 )
-async def calc_slash(
-    interaction: discord.Interaction,
-    expression: str,
-    fmt: str = "format"  # default format
-):
-    formats = {
-        "format": format,
-        "power10_tower": power10_tower,
-        "solve_equation": solve_equation,
-        "correct": correct,
-        "hyper_e": hyper_e,
-        "letter": letter,
-        "suffix_to_scientific": suffix_to_scientific,
-    }
+async def calc_slash(interaction: discord.Interaction, expression: str, fmt: str = "format"):
+    async def run_calc(expression: str, fmt: str = "format"):
+        formats = {
+            "format": format,
+            "power10_tower": power10_tower,
+            "solve_equation": solve_equation,
+            "correct": correct,
+            "hyper_e": hyper_e,
+            "letter": letter,
+            "suffix_to_scientific": suffix_to_scientific,
+        }
 
-    # Defer to avoid interaction timeout
-    await interaction.response.defer(thinking=True)
-
-    try:
         tokens = expression.strip().split(" ")
         fmt_name = fmt.lower() if fmt else "format"
         if tokens[-1].lower() in formats:
@@ -349,11 +342,22 @@ async def calc_slash(
         result = formats[fmt_name](value)
         elapsed = time.time() - start_time
 
-        await interaction.followup.send(
-            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
-        )
+        return f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
+
+    try:
+        result_message = await run_calc(expression, fmt)
+
+        if not interaction.response.is_done():
+            await interaction.response.send_message(result_message)
+        else:
+            await interaction.followup.send(result_message)
+
     except Exception as e:
-        await interaction.followup.send(f"❌ Error: `{e}`")
+        if not interaction.response.is_done():
+            await interaction.response.send_message(f"❌ Error: `{e}`")
+        else:
+            await interaction.followup.send(f"❌ Error: `{e}`")
+
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
@@ -1706,6 +1710,7 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token)
+
 
 
 
