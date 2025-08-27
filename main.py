@@ -9,6 +9,7 @@ import json
 from flask import Flask
 from threading import Thread
 import math
+import asyncio
 
 # ---------------------
 # Flask Keep-Alive
@@ -1717,6 +1718,7 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token)
+
 
 
 
