@@ -290,7 +290,7 @@ async def calc_slash(interaction: discord.Interaction, expression: str):
             fmt_name = tokens[-1].lower()
             tokens = tokens[:-1]
         expr = " ".join(tokens).replace("^", "**")
-        safe_globals = { "__builtins__": {}, "math": math, 
+        safe_globals = { "__builtins__": {}, "math": math,
             "tetration": tetration, "tetr": tetration,
             "fact": fact, "factorial": factorial, "gamma": gamma,
             "slog": slog, "addlayer": addlayer, "add": add, "addition": addition,
@@ -307,9 +307,11 @@ async def calc_slash(interaction: discord.Interaction, expression: str):
             value = expr
         result = formats[fmt_name](value)
         elapsed = time.time() - start_time
-        await interaction.response.send_message(f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds", ephemeral=True)
+        # Make it visible to everyone
+        await interaction.response.send_message(f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds")
     except Exception as e:
-        await interaction.response.send_message(f"Error: `{e}`", ephemeral=True)
+        await interaction.response.send_message(f"Error: `{e}`")
+
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
