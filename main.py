@@ -293,7 +293,7 @@ async def guide_slash(interaction: discord.Interaction):
 # ---------------------
 # Calculator Command (/calc)
 # ---------------------
-@bot.tree.command(name="calc", description="Evaluate an expression with format support")
+@bot.tree.command(name="calc", description="Evaluate an expression")
 @app_commands.describe(
     expression="Expression to evaluate",
     format="Optional output format"
@@ -1702,6 +1702,7 @@ def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
 bot.run(token)
+
 
 
 
