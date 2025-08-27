@@ -28,6 +28,18 @@ def keep_alive():
 keep_alive()
 
 # ---------------------
+# Logging Setup
+# ---------------------
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[
+        logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'),
+        logging.StreamHandler()
+    ],
+    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s'
+)
+
+# ---------------------
 # Bot Setup
 # ---------------------
 load_dotenv()
@@ -111,7 +123,7 @@ async def current(ctx):
     )
 
 # ---------------------
-# Counting Logic (on_message)
+# Counting Logic
 # ---------------------
 @bot.event
 async def on_message(message):
@@ -135,7 +147,6 @@ async def on_message(message):
         safe_globals = {
             "__builtins__": {},
             "math": math,
-            # Include all your original functions: tetration, fact, slog, etc.
             "tetration": tetration,
             "tetr": tetration,
             "fact": fact,
@@ -173,16 +184,13 @@ async def on_message(message):
 
         try:
             value = eval(first_token, safe_globals, {})
-            if value >= 0:
-                value = math.floor(float(value) + 0.5)
-            else:
-                value = math.ceil(float(value) - 0.5)
+            value = math.floor(float(value) + 0.5) if value >= 0 else math.ceil(float(value) - 0.5)
         except Exception:
             return
 
         if message.author.id == last_counter:
             await message.channel.send(
-                f"❌ {message.author.mention}, you counted twice in a row and lost! The count resets to 1."
+                f"❌ {message.author.mention}, you counted twice in a row! Count resets to 1."
             )
             current_count = 0
             last_counter = None
@@ -207,7 +215,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 # ---------------------
-# Calculator Commands (!calc)
+# Calculator Commands (!calc + /calc)
 # ---------------------
 @bot.command()
 async def guide(ctx):
@@ -218,12 +226,10 @@ async def guide(ctx):
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
                   "floor", "ceil"]
-
     help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
     help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower`"
-
     await ctx.send(help_message)
 
 @bot.command()
@@ -237,70 +243,34 @@ async def calc(ctx, *, expression: str):
         "letter": letter,
         "suffix_to_scientific": suffix_to_scientific,
     }
-
     try:
         tokens = expression.strip().split(" ")
         fmt_name = "format"
         if tokens[-1].lower() in formats:
             fmt_name = tokens[-1].lower()
             tokens = tokens[:-1]
-
         expr = " ".join(tokens).replace("^", "**")
-
-        safe_globals = {
-            "__builtins__": {},
-            "math": math,
-            "tetration": tetration,
-            "tetr": tetration,
-            "fact": fact,
-            "factorial": factorial,
-            "gamma": gamma,
-            "slog": slog,
-            "addlayer": addlayer,
-            "add": add,
-            "addition": addition,
-            "sub": sub,
-            "subtract": subtract,
-            "mul": mul,
-            "multiply": multiply,
-            "div": div,
-            "division": division,
-            "pow": pow,
-            "power": power,
-            "exp": exp,
-            "lambertw": lambertw,
-            "root": root,
-            "sqrt": sqrt,
-            "eq": eq,
-            "lt": lt,
-            "gte": gte,
-            "gt": gt,
-            "lte": lte,
-            "min": min,
-            "max": max,
-            "floor": floor,
-            "ceil": ceil,
-            "log": log,
-            "ln": ln,
-            "logbase": logbase
+        safe_globals = { "__builtins__": {}, "math": math, 
+            "tetration": tetration, "tetr": tetration,
+            "fact": fact, "factorial": factorial, "gamma": gamma,
+            "slog": slog, "addlayer": addlayer, "add": add, "addition": addition,
+            "sub": sub, "subtract": subtract, "mul": mul, "multiply": multiply,
+            "div": div, "division": division, "pow": pow, "power": power,
+            "exp": exp, "lambertw": lambertw, "root": root, "sqrt": sqrt,
+            "eq": eq, "lt": lt, "gte": gte, "gt": gt, "lte": lte, "min": min, "max": max,
+            "floor": floor, "ceil": ceil, "log": log, "ln": ln, "logbase": logbase
         }
-
         start_time = time.time()
         try:
             value = eval(expr, safe_globals, {})
         except:
             value = expr
-
         result = formats[fmt_name](value)
         elapsed = time.time() - start_time
-
         await ctx.reply(f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds", mention_author=False)
     except Exception as e:
         await ctx.reply(f"Error: `{e}`", mention_author=False)
 
-# ---------------------
-# Slash Commands (Hybrid)
-# ---------------------
 @bot.tree.command(name="calc", description="Evaluate an expression with format support")
 @app_commands.describe(expression="Expression to evaluate")
 async def calc_slash(interaction: discord.Interaction, expression: str):
@@ -313,67 +283,33 @@ async def calc_slash(interaction: discord.Interaction, expression: str):
         "letter": letter,
         "suffix_to_scientific": suffix_to_scientific,
     }
-
     try:
         tokens = expression.strip().split(" ")
         fmt_name = "format"
         if tokens[-1].lower() in formats:
             fmt_name = tokens[-1].lower()
             tokens = tokens[:-1]
-
         expr = " ".join(tokens).replace("^", "**")
-
-        safe_globals = {
-            "__builtins__": {},
-            "math": math,
-            "tetration": tetration,
-            "tetr": tetration,
-            "fact": fact,
-            "factorial": factorial,
-            "gamma": gamma,
-            "slog": slog,
-            "addlayer": addlayer,
-            "add": add,
-            "addition": addition,
-            "sub": sub,
-            "subtract": subtract,
-            "mul": mul,
-            "multiply": multiply,
-            "div": div,
-            "division": division,
-            "pow": pow,
-            "power": power,
-            "exp": exp,
-            "lambertw": lambertw,
-            "root": root,
-            "sqrt": sqrt,
-            "eq": eq,
-            "lt": lt,
-            "gte": gte,
-            "gt": gt,
-            "lte": lte,
-            "min": min,
-            "max": max,
-            "floor": floor,
-            "ceil": ceil,
-            "log": log,
-            "ln": ln,
-            "logbase": logbase
+        safe_globals = { "__builtins__": {}, "math": math, 
+            "tetration": tetration, "tetr": tetration,
+            "fact": fact, "factorial": factorial, "gamma": gamma,
+            "slog": slog, "addlayer": addlayer, "add": add, "addition": addition,
+            "sub": sub, "subtract": subtract, "mul": mul, "multiply": multiply,
+            "div": div, "division": division, "pow": pow, "power": power,
+            "exp": exp, "lambertw": lambertw, "root": root, "sqrt": sqrt,
+            "eq": eq, "lt": lt, "gte": gte, "gt": gt, "lte": lte, "min": min, "max": max,
+            "floor": floor, "ceil": ceil, "log": log, "ln": ln, "logbase": logbase
         }
-
         start_time = time.time()
         try:
             value = eval(expr, safe_globals, {})
         except:
             value = expr
-
         result = formats[fmt_name](value)
         elapsed = time.time() - start_time
-
         await interaction.response.send_message(f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"Error: `{e}`", ephemeral=True)
-
 import math
 # --Editable constants--
 FORMAT_THRESHOLD = 7  # the amount of e's when switching from scientific to (10^)^x format
@@ -1081,14 +1017,14 @@ def gamma(x):
 def floor(x):
 	x= correct(x)
 	try:
-		return math.floor(x)
+		math.floor(x)
 	except:
 		return x
 
 def ceil(x):
 	x = correct(x)
 	try:
-		return math.ceil(x)
+		math.ceil(x)
 	except:
 		return x
 
@@ -1110,6 +1046,26 @@ def lambertw(z):
     part2 = add(termC, termD)
 
     return add(part1, part2)
+def ooms(start, end, time=1):
+    if start > end:
+        raise ValueError("OoMs error: start for the OoMs can't be more than the end")
+
+    slg_end = slog(end)
+    slg_start = slog(start)
+
+    slg_fl_start = math.floor(slg_start)
+    slg_fl_end = math.floor(slg_end)
+
+    x = (tetr(10, slg_end - (slg_fl_end - 1)) - tetr(10, slg_start - (slg_fl_start - 1))) / time
+
+    if x < 1 and slg_fl_end - 2 < 0:
+        y = slg_fl_end - 2
+        x = round(10 ** x, 6)
+    else:
+        y = slg_fl_end - 1
+        x = round(x, 6)
+
+    return f"{x} OoMs^{y}"
 # Comparisons
 def gt(a, b):
     a, b = correct(a), correct(b)
@@ -1415,7 +1371,7 @@ def letter(s: str, decimals = format_decimals) -> str:
             if mantissa_val >= 950:
                 mantissa_val = 1
                 group += 1
-            if abs(mantissa_val - round(mantissa_val)) < 1e-13:
+            if abs(mantissa_val - round(mantissa_val)) < 1e-5:
                 formatted = str(int(round(mantissa_val)))
             else:
                 formatted = f"{comma_format(mantissa_val, decimals)}".rstrip('0').rstrip('.')
@@ -1438,7 +1394,7 @@ def letter(s: str, decimals = format_decimals) -> str:
             if mantissa_val >= 950:
                 mantissa_val = 1
                 group += 1
-            if abs(mantissa_val - round(mantissa_val)) < 1e-13:
+            if abs(mantissa_val - round(mantissa_val)) < 1e-5:
                 formatted = str(int(round(mantissa_val)))
             else:
                 formatted = f"{comma_format(mantissa_val, decimals)}".rstrip('0').rstrip('.')
@@ -1562,50 +1518,37 @@ def format_float_scientific(x: float, sig_digits: int = 15) -> str:
     mant = float(x) / (10 ** exp)
     mant_str = f"{mant:.{sig_digits}g}".rstrip('0').rstrip('.')
     return f"{mant_str}e{exp}"
+
 def correct(x):
     if not isinstance(x, (int, float)):
         x = str(x).replace(",", "").strip()
     if isinstance(x, (int, float)):  
         return x  
-    x = str(x).strip()
-    es = ""
-    i = 0
-    while i < len(x) and x[i] == "e":
-        es += "e"
-        i += 1
-
-    rest = x[i:]
-    if "e" in rest:
-        base_str, exp_str = rest.split("e", 1)
-        try:
-            base = float(base_str) if base_str else 1.0
-            exp = float(exp_str)
-            log_base = math.log10(base)
-            return correct("e" * (len(es) + 1) + str(exp + log_base))
-        except ValueError:
-            pass
-    if "F" in x:  
-        f_index = x.find("F")  
-        if f_index > 0:  
-            before_f = x[:f_index]  
-            after_f = x[f_index+1:]      
-            try:  
-                base = float(before_f)  
-                exp = float(after_f)  
-                x = "10^^" + str(exp + math.log10(base))  
-            except ValueError:  
-                if x.startswith("F"):  
-                    x = "10^^" + x[1:]  
-        elif x.startswith("F"):  
-            try:  
-                height = float(x[1:])  
-                return tetr(10, height)  
-            except ValueError:  
-                pass  
-
-    if tetr(10, slog(x)) == "NaN":  
-        return suffix_to_scientific(x)  
+    x = str(x)  
+    if isinstance(x, str):  
+        x = x.strip()  
+        if "F" in x:  
+            f_index = x.find("F")  
+            if f_index > 0:  
+                before_f = x[:f_index]  
+                after_f = x[f_index+1:]      
+                try:  
+                    base = float(before_f)  
+                    exp = float(after_f)  
+                    x = "10^^" + str(exp + math.log10(base))  
+                except ValueError:  
+                    if x.startswith("F"):  
+                        x = "10^^" + x[1:]  
+            elif x.startswith("F"):  
+                try:  
+                    height = float(x[1:])  
+                    return tetr(10, height)  
+                except ValueError:  
+                    pass  
+        if tetr(10, slog(x)) == "NaN":  
+            return suffix_to_scientific(x)  
     return tetr(10, slog(x))
+
 def fix_letter_output(s):
     cleaned = ''.join(c for c in s if c not in '()')
     e_count = 0
@@ -1718,8 +1661,4 @@ def binary_search(expr: str, target: float, low=0, high=1e10, tol=1e-14):
 def solve_equation(equation: str):
     expr, target = parse_equation(equation)
     return binary_search(expr, target)
-bot.run(token, log_handler=handler, log_level=logging.DEBUG)
-
-
-
-
+bot.run(token)
