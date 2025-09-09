@@ -161,7 +161,6 @@ async def on_message(message):
             "sub": sub,
             "mul": mul,
             "div": div,
-            "division": division,
             "pow": pow,
             "power": power,
             "exp": exp,
@@ -267,7 +266,6 @@ async def calc(ctx, *, expression: str):
             "sub": sub,
             "mul": mul,
             "div": div,
-            "division": division,
             "pow": pow,
             "power": power,
             "exp": exp,
@@ -342,7 +340,6 @@ async def calc_slash(
 
     try:
         expr = expression.replace("^", "**")
-
         safe_globals = {
             "__builtins__": {},
             "math": math,
@@ -361,7 +358,6 @@ async def calc_slash(
             "sub": sub,
             "mul": mul,
             "div": div,
-            "division": division,
             "pow": pow,
             "power": power,
             "exp": exp,
@@ -381,7 +377,6 @@ async def calc_slash(
             "ln": ln,
             "logbase": logbase
         }
-
         start_time = time.time()
         try:
             value = eval(expr, safe_globals, {})
@@ -1341,5 +1336,6 @@ def format(num, small=False):
         val = math.log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
