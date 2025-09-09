@@ -218,8 +218,8 @@ async def on_message(message):
 # ---------------------
 @bot.command()
 async def guide(ctx):
-    formats = ["format","power10_tower","correct","hyper_e","letter","suffix_to_scientific"]
-    operations = ["tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+    formats = ["format","array","hyper_e","suffix"]
+    operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "lambertw",
                   "fact (factorial)", "gamma", "OoMs",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
@@ -228,8 +228,9 @@ async def guide(ctx):
     help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
+    help_message = "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10"
     help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower`"
-    help_message += "Usage as an app: `/calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower`"
+    help_message += "Usage as an app: `/calc <expression> [format]`\nExample: `!calc tetr(10,10) suffix`"
     await ctx.send(help_message)
 
 @bot.command()
@@ -301,17 +302,18 @@ async def calc(ctx, *, expression: str):
 # ---------------------
 @bot.tree.command(name="guide", description="Shows help for the calculator")
 async def guide_slash(interaction: discord.Interaction):
-    formats = ["format", "power10_tower", "correct", "hyper_e", "letter", "suffix_to_scientific"]
-    operations = ["tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+    formats = ["format","array","hyper_e","suffix"]
+    operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "lambertw",
                   "fact (factorial)", "gamma", "OoMs",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
                   "floor", "ceil"]
-    help_message = "**📘 Calculator Help**\n\n"
+    help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "Usage: `/calc expression:<expression> fmt:<optional format>`"
+    help_message = "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10"
+    help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower`"
     help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
     await interaction.response.send_message(help_message)
 
@@ -1149,7 +1151,7 @@ def root(a,b): return power(a, divide(1,b))
 def exp(x): return power(2.718281828459045, x)
 # Short names
 def hept(a,b): return heptation(a,b)
-def hex(a,b): return hex(a,b)
+def hex(a,b): return hexation(a,b)
 def pent(a,b): return pentation(a,b)
 def tetr(a,b): return tetration(a,b)
 def pow(a,b): return power(a,b)
@@ -1336,6 +1338,7 @@ def format(num, small=False):
         val = math.log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
