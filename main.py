@@ -225,11 +225,11 @@ async def guide(ctx):
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
                   "floor", "ceil"]
-    help_message = "**📘 !calc Help**\n\n"
+    help_message += "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message = "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10"
-    help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower`"
+    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10 \n"
+    help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) power10_tower` \n"
     help_message += "Usage as an app: `/calc <expression> [format]`\nExample: `!calc tetr(10,10) suffix`"
     await ctx.send(help_message)
 
@@ -1338,6 +1338,7 @@ def format(num, small=False):
         val = math.log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
