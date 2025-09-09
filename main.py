@@ -158,11 +158,8 @@ async def on_message(message):
             "slog": slog,
             "addlayer": addlayer,
             "add": add,
-            "addition": addition,
             "sub": sub,
-            "subtract": subtract,
             "mul": mul,
-            "multiply": multiply,
             "div": div,
             "division": division,
             "pow": pow,
@@ -267,11 +264,8 @@ async def calc(ctx, *, expression: str):
             "slog": slog,
             "addlayer": addlayer,
             "add": add,
-            "addition": addition,
             "sub": sub,
-            "subtract": subtract,
             "mul": mul,
-            "multiply": multiply,
             "div": div,
             "division": division,
             "pow": pow,
@@ -364,11 +358,8 @@ async def calc_slash(
             "slog": slog,
             "addlayer": addlayer,
             "add": add,
-            "addition": addition,
             "sub": sub,
-            "subtract": subtract,
             "mul": mul,
-            "multiply": multiply,
             "div": div,
             "division": division,
             "pow": pow,
@@ -1350,4 +1341,5 @@ def format(num, small=False):
         val = math.log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
