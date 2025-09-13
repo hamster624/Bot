@@ -231,7 +231,7 @@ async def guide(ctx):
     help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10. \n"
+    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10. Max 40 arrows.\n"
     help_message += "To use hyperlog the 1st number is the number you want to log and 2nd is arrows for example if log10(x) = 10^x and we solve for x then hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array. \n"
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
@@ -319,7 +319,7 @@ async def guide_slash(interaction: discord.Interaction):
     help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10. \n"
+    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10. Max 40 arrows.\n"
     help_message += "To use hyperlog the 1st number is the number you want to log and 2nd is arrows for example if log10(x) = 10^x and we solve for x then hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array. \n"
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
@@ -1350,6 +1350,7 @@ def format(num, small=False):
         val = math.log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
