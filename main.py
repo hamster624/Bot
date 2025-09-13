@@ -156,6 +156,9 @@ async def on_message(message):
             "factorial": factorial,
             "gamma": gamma,
             "slog": slog,
+            "plog": plog,
+            "hlog": hlog,
+            "hyper_log": hyper_log,
             "addlayer": addlayer,
             "add": add,
             "sub": sub,
@@ -218,9 +221,9 @@ async def on_message(message):
 # ---------------------
 @bot.command()
 async def guide(ctx):
-    formats = ["format","array","hyper_e","suffix"]
+    formats = ["format","array","hyper_e","suffix", "string"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
-                  "log", "ln", "logbase", "slog", "lambertw",
+                  "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma", "OoMs",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
@@ -228,16 +231,17 @@ async def guide(ctx):
     help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10 \n"
-    help_message += "Usage: `!calc <expression> [format]`\nExample: `!calc tetr(10,10) hyper_e` \n"
-    help_message += "Usage as an app: `/calc <expression> [format]`"
+    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10. \n"
+    help_message += "To use hyperlog the 1st number is the number you want to log and 2nd is arrows for example if log10(x) = 10^x and we solve for x then hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array. \n"
+    help_message += "Usage: `/calc <expression> [format]`\n"
+    help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
     await ctx.send(help_message)
 
 @bot.command()
 async def calc(ctx, *, expression: str):
     formats = {
         "format": format,
-        "tostring": toString,
+        "string": string,
         "hyper_e": hyper_e,
         "suffix": suffix,
         "array": correct,
@@ -262,6 +266,9 @@ async def calc(ctx, *, expression: str):
             "factorial": factorial,
             "gamma": gamma,
             "slog": slog,
+            "plog": plog,
+            "hlog": hlog,
+            "hyper_log": hyper_log,
             "addlayer": addlayer,
             "add": add,
             "sub": sub,
@@ -302,9 +309,9 @@ async def calc(ctx, *, expression: str):
 # ---------------------
 @bot.tree.command(name="guide", description="Shows help for the calculator")
 async def guide_slash(interaction: discord.Interaction):
-    formats = ["format","array","hyper_e","suffix"]
+    formats = ["format","array","hyper_e","suffix", "string"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
-                  "log", "ln", "logbase", "slog", "lambertw",
+                  "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma", "OoMs",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
@@ -312,7 +319,8 @@ async def guide_slash(interaction: discord.Interaction):
     help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10 \n"
+    help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10. \n"
+    help_message += "To use hyperlog the 1st number is the number you want to log and 2nd is arrows for example if log10(x) = 10^x and we solve for x then hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array. \n"
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
     await interaction.response.send_message(help_message)
@@ -332,7 +340,7 @@ async def calc_slash(
 ):
     formats = {
         "format": format,
-        "tostring": toString,
+        "string": string,
         "hyper_e": hyper_e,
         "suffix": suffix,
         "array": correct,
@@ -355,6 +363,9 @@ async def calc_slash(
             "factorial": factorial,
             "gamma": gamma,
             "slog": slog,
+            "plog": plog,
+            "hlog": hlog,
+            "hyper_log": hyper_log,
             "addlayer": addlayer,
             "add": add,
             "sub": sub,
@@ -646,7 +657,7 @@ def from_hyper_e(s):
                 if val.is_integer(): val = int(val) # this is to remove the .0 from floats
 
         nums.append(val)
-    return [sign] + nums
+    return correct([sign] + nums)
 
 def compare(a, b):
     A = correct(a)
@@ -688,53 +699,53 @@ def polarize(array, smallTop=False):
     if len(pairs) == 0:
         pairs = [[0, 0]]
 
-    bottom = pairs[0][1] if pairs[0][0] == 0 else 10.0
-    top = 0.0
+    bottom = pairs[0][1] if pairs[0][0] == 0 else 10
+    top = 0
     height = 0
 
     if len(pairs) <= 1 and pairs[0][0] == 0:
         if smallTop:
-            while bottom >= 10.0:
+            while bottom >= 10:
                 bottom = math.log10(bottom)
-                top += 1.0
+                top += 1
                 height = 1
     else:
         elem = 1 if pairs[0][0] == 0 else 0
         top = pairs[elem][1]
         height = int(pairs[elem][0])
 
-        while (bottom >= 10.0) or (elem < len(pairs)) or (smallTop and top >= 10.0):
-            if bottom >= 10.0:
+        while (bottom >= 10) or (elem < len(pairs)) or (smallTop and top >= 10):
+            if bottom >= 10:
                 if height == 1:
                     bottom = math.log10(bottom)
-                    if bottom >= 10.0:
+                    if bottom >= 10:
                         bottom = math.log10(bottom)
-                        top += 1.0
+                        top += 1
                 elif height < MAX_LOGP1_REPEATS:
-                    if bottom >= 1e10: bottom = math.log10(math.log10(math.log10(bottom))) + 2.0
-                    else: bottom = math.log10(math.log10(bottom)) + 1.0
+                    if bottom >= 1e10: bottom = math.log10(math.log10(math.log10(bottom))) + 2
+                    else: bottom = math.log10(math.log10(bottom)) + 1
                     for _i in range(2, height):
-                        bottom = math.log10(bottom) + 1.0
-                else: bottom = 1.0
-                top += 1.0
+                        bottom = math.log10(bottom) + 1
+                else: bottom = 1
+                top += 1
             else:
-                if elem == len(pairs) - 1 and pairs[elem][0] == height and not (smallTop and top >= 10.0): break
+                if elem == len(pairs) - 1 and pairs[elem][0] == height and not (smallTop and top >= 10): break
                 bottom = math.log10(bottom) + top
                 height += 1
                 if elem < len(pairs) and height > pairs[elem][0]: elem += 1
                 if elem < len(pairs):
                     if height == pairs[elem][0]:
-                        top = pairs[elem][1] + 1.0
-                    elif bottom < 10.0:
+                        top = pairs[elem][1] + 1
+                    elif bottom < 10:
                         diff = pairs[elem][0] - height
                         if diff < MAX_LOGP1_REPEATS:
-                            for _i in range(diff):
-                                bottom = math.log10(bottom) + 1.0
-                        else: bottom = 1.0
+                            for _ in range(diff):
+                                bottom = math.log10(bottom) + 1
+                        else: bottom = 1
                         height = pairs[elem][0]
-                        top = pairs[elem][1] + 1.0
-                    else: top = 1.0
-                else: top = 1.0
+                        top = pairs[elem][1] + 1
+                    else: top = 1
+                else: top = 1
     return {"bottom": bottom, "top": top, "height": int(height)}
 
 def array_search(arr, height):
@@ -762,7 +773,7 @@ def comma_format(num, precision=0):
         val = a[1]
         if precision == 0: return f"{int(round(val)):,}"
         else: return f"{val:,.{precision}f}"
-    try: return toString(a)
+    try: return string(a)
     except Exception: return str(a)
 
 def regular_format(num, precision):
@@ -772,7 +783,7 @@ def regular_format(num, precision):
         if precision == 0: return f"{int(val):,}"
         else: return f"{val:.{precision}f}"
            
-    return toString(a)
+    return string(a)
 
 # End of stuff from https://github.com/cloudytheconqueror/letter-notation-format
 def _is_int_like(x):
@@ -803,20 +814,20 @@ def _lambertw_float(r, tol=1e-12, max_iter=100):
         raise ValueError("lambertw: non-finite input")
     if r < -0.3678794411714423:
         raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
-    if r == 0.0: return 0.0
-    if r == 1.0: return 0.5671432904097839
-    t = 0.0 if r < 10.0 else (math.log(r) - math.log(math.log(r)))
+    if r == 0: return 0
+    if r == 1: return 0.5671432904097839
+    t = 0 if r < 10 else (math.log(r) - math.log(math.log(r)))
     for _ in range(max_iter):
-        n = (r * math.exp(-t) + t*t) / (t + 1.0)
-        if abs(n - t) < tol * max(1.0, abs(n)): return n
+        n = (r * math.exp(-t) + t*t) / (t + 1)
+        if abs(n - t) < tol * max(1, abs(n)): return n
         t = n
     raise RuntimeError(f"lambertw: iteration failed to converge: {r}")
 
 def lambertw(x):
     X = correct(x)
-    if lt(X, correct(-0.3678794411714423)): raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
-    if eq(X, 0): return correct(0)
-    if eq(X, 1): return correct(0.5671432904097839)
+    if lt(X, [1, 0.3678794411714423]): raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
+    if eq(X, 0): return [0, 0]
+    if eq(X, 1): return [0, 0.5671432904097839]
     r = tofloat(X)
     if r is not None: return correct(_lambertw_float(r))
     L1 = ln(X)
@@ -833,15 +844,19 @@ def log(x):
     return correct(arr)
 
 
-def slog(x):
+def slog(x): return hyper_log(x, 2)
+def plog(x): return hyper_log(x, 3)
+def hlog(x): return hyper_log(x, 4)
+def hyper_log(x, k):
+    if k < 1: raise ValueError("k must be >= 1")
     arr = correct(x)
-    if arr[0] == 1: raise ValueError("Can't slog a negative")
-    if lte(arr,10): return correct(math.log10(tofloat(arr)))
-    if len(arr) == 2 and arr[1] <= 1e10: return correct(math.log10(math.log10(arr[1])) + 1)
-    if len(arr) == 2 and arr[1] > 1e10: return correct(math.log10(math.log10(math.log10(arr[1]))) + 2)
-    if len(arr) == 3: return correct(math.log10(math.log10(arr[1])) + arr[2] + 1)
-    if len(arr) == 4: return correct([0, arr[1], arr[2], arr[3] - 1])
-    return arr
+    if arr[0] == 1: raise ValueError("Can't plog a negative")
+    if lte(arr, 10): return correct(math.log10(arr[1]))
+    if k == 1: return correct(math.log10(tofloat(arr)))
+    if lte(arr, [0, 10000000000] + [8] * max(0, k - 2)): return correct(math.log10(tofloat(hyper_log(arr, k - 1))) + 1)
+    if len(arr) < (k + 1): return correct(math.log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
+    if len(arr) == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
+    if len(arr) == (k + 2): return correct(0, arr[1:(k + 1)] + [arr[k + 1] - 1])
 
 def addlayer(x):
     arr = correct(x)
@@ -1035,109 +1050,105 @@ def tetration(a, r):
     else: f = correct(f_arr)
     return f
 def arrow(base, arrows, n, a_arg=0):
-    if arrows >20: ValueError("Arrows must be under 20")
-    r_correct = correct(arrows)
-    if not _is_int_like(arrows) or tofloat(r_correct) < 0:
-        raise ValueError("arrows must be a non-negative integer-like value")
-    r = int(round(tofloat(r_correct)))
-    t = correct(base)
-    n = correct(n)
-    if lt(n, [0,0]):
-        raise ValueError("n must be >= 0")
-    if r == 0: return multiply(t, n)
-    if r == 1: return power(t, n)
-    if r == 2: return tetration(t, n)
-    if r > MAX_SAFE_INT: return addlayer(r_correct)
-    if tofloat(n) is None:
-        arr_n = correct(n)
-        arr_res = arr_n[:]
-        target_len = r + 2
-        while len(arr_res) < target_len:
-            arr_res.append(0)
-        arr_res[-1] = 1
-        return correct(arr_res)
-    if tofloat(t) is None:
-        arr_t = correct(t)
-        arr_res = arr_t[:]
-        target_len = r + 1
-        while len(arr_res) < target_len:
-            arr_res.append(0)
-        s_n = tofloat(n)
-        if s_n is not None and abs(s_n - round(s_n)) < 1e-12:
-            val = int(round(s_n)) - 1
-            if val < 0: val = 0
-            arr_res[-1] = val
-        else:
+    def _arrow_raw(base, arrows, n, a_arg=0):
+        r_correct = correct(arrows)
+        if not _is_int_like(arrows) or tofloat(r_correct) < 0:
+            raise ValueError("arrows must be a non-negative integer-like value")
+        r = int(tofloat(r_correct))
+        t = correct(base)
+        n = correct(n)
+        if lt(n, [0,0]):
+            raise ValueError("n must be >= 0")
+        if r == 0: return multiply(t, n)
+        if r == 1: return power(t, n)
+        if r == 2: return tetration(t, n)
+        if r > MAX_SAFE_INT: return addlayer(r_correct)
+        if tofloat(n) is None:
+            arr_n = correct(n)
+            arr_res = arr_n[:]
+            target_len = r + 2
+            while len(arr_res) < target_len:
+                arr_res.append(0)
             arr_res[-1] = 1
-        return correct(arr_res)
-
-    thr_str_r = f"10{{{r}}}9007199254740991"
-    thr_str_rp1 = f"10{{{r+1}}}9007199254740991"
-    try:
-        thr_r = correct(thr_str_r)
-        thr_rp1 = correct(thr_str_rp1)
-    except Exception:
-        thr_r = [0, 10000000000, 306]
-        thr_rp1 = [0, 1e309 if hasattr(math, 'inf') else 1e308]
-
-    if gte(t, thr_r) or tofloat(n) is None and gt(n, [0, MAX_SAFE_INT]): return maximum(t, n)
-       
-    s = tofloat(n)
-    if s is not None and abs(s - round(s)) < 1e-12:
-        u = int(round(s))
-        if u <= 0: return [0, 1]
-        i = t
-        if u > 0: u -= 1
-        fcount = 0
-        limit = thr_rp1
-        while u != 0 and lt(i, limit) and fcount < 100:
-            i = arrow(t, r-1, i, a_arg + 1)
-            u -= 1
-            fcount += 1
-        if fcount == 100: return correct([[0, 10], [r, 1]])
+            return correct(arr_res)
+        if tofloat(t) is None:
+            arr_t = correct(t)
+            arr_res = arr_t[:]
+            target_len = r + 1
+            while len(arr_res) < target_len:
+                arr_res.append(0)
+            s_n = tofloat(n)
+            if s_n is not None and abs(s_n - round(s_n)) < 1e-12:
+                val = int(round(s_n)) - 1
+                if val < 0: val = 0
+                arr_res[-1] = val
+            else:
+                arr_res[-1] = 1
+            return correct(arr_res)
+        thr_str_r = f"10{{{r}}}9007199254740991"
+        thr_str_rp1 = f"10{{{r+1}}}9007199254740991"
         try:
-            arr = correct(i)
-            if len(arr) >= r:
-                idx = r
-                if idx < len(arr): arr[idx] = arr[idx] + u
-                else:
-                    while len(arr) <= idx: arr.append(0)
-                    arr[idx] = arr[idx] + u
-                return correct(arr)
+            thr_r = correct(thr_str_r)
+            thr_rp1 = correct(thr_str_rp1)
         except Exception:
-            pass
-        return i
-
-    if s is not None:
-        u = math.floor(s)
-        frac = s - u
-        if frac > 1e-15: i = arrow(t, r-1, frac, a_arg + 1)
-        else:
+            thr_r = [0, 10000000000, 306]
+            thr_rp1 = [0, 1e309 if hasattr(math, 'inf') else 1e308]
+        if gte(t, thr_r) or tofloat(n) is None and gt(n, [0, MAX_SAFE_INT]): return maximum(t, n)
+        s = tofloat(n)
+        if s is not None and abs(s - round(s)) < 1e-12:
+            u = int(round(s))
+            if u <= 0: return [0, 1]
             i = t
             if u > 0: u -= 1
-        fcount = 0
-        limit = thr_rp1
-        while u != 0 and lt(i, limit) and fcount < 100:
-            if u > 0:
-                i = arrow(t, r-1, i, a_arg + 1)
+            fcount = 0
+            limit = thr_rp1
+            while u != 0 and lt(i, limit) and fcount < 100:
+                i = _arrow_raw(t, r-1, i, a_arg + 1)
                 u -= 1
+                fcount += 1
+            if fcount == 100: return correct([[0, 10], [r, 1]])
+            try:
+                if len(i) >= r:
+                    idx = r
+                    if idx < len(i): i[idx] = i[idx] + u
+                    else:
+                        while len(i) <= idx: i.append(0)
+                        i[idx] = i[idx] + u
+                    return i
+            except Exception:
+                pass
+            return correct(i)
+        if s is not None:
+            u = math.floor(s)
+            frac = s - u
+            if frac > 1e-15: i = _arrow_raw(t, r-1, frac, a_arg + 1)
             else:
-                break
-            fcount += 1
-        if fcount == 100: return correct([[0, 10], [r, 1]])
-        try:
-            arr = correct(i)
-            if len(arr) >= r:
-                idx = r
-                if idx < len(arr): arr[idx] = arr[idx] + u
+                i = t
+                if u > 0: u -= 1
+            fcount = 0
+            limit = thr_rp1
+            while u != 0 and lt(i, limit) and fcount < 100:
+                if u > 0:
+                    i = _arrow_raw(t, r-1, i, a_arg + 1)
+                    u -= 1
                 else:
-                    while len(arr) <= idx: arr.append(0)
-                    arr[idx] = arr[idx] + u
-                return correct(arr)
-        except Exception:
-            pass
-        return i
-    return maximum(t, n)
+                    break
+                fcount += 1
+            if fcount == 100: return correct([[0, 10], [r, 1]])
+            try:
+                if len(i) >= r:
+                    idx = r
+                    if idx < len(i): i[idx] = i[idx] + u
+                    else:
+                        while len(i) <= idx: i.append(0)
+                        i[idx] = i[idx] + u
+                    return i
+            except Exception:
+                pass
+            return correct(i)
+        return maximum(t, n)
+    res = _arrow_raw(base, arrows, n, a_arg) # why this? cuz the output is weird
+    return correct(res)
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
 def heptation(a,b): return arrow(a,5,b)
@@ -1160,7 +1171,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 # Formats
-def toString(arr, top=True):
+def string(arr, top=True):
     arr = correct(arr)
     sign = "-" if arr[0] == 1 and top else ""
     if len(arr) == 2: return f"{sign}{arr[1]}"
@@ -1171,7 +1182,7 @@ def toString(arr, top=True):
 
     depth = len(arr) - 2
     n = arr[-1]
-    inner = toString(arr[:-1], top=False) 
+    inner = string(arr[:-1], top=False) 
 
     if depth <= 4:
         arrows = "^" * depth
@@ -1277,7 +1288,7 @@ def suffix(x):
 def format(num, small=False):
     precision2 = max(3, decimals)
     precision3 = max(4, decimals)
-    precision4 = max(6, decimals)
+    precision4 = max(10, decimals)
     n = correct(num)
     if len(n) == 2 and abs(n[1]) < 1e-308: return f"{0:.{decimals}f}"
     if n[0] == 1: return "-" + format(neg(n), decimals)
@@ -1338,10 +1349,5 @@ def format(num, small=False):
         val = math.log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
-
-
-
-
-
 
 
