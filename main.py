@@ -1050,6 +1050,7 @@ def tetration(a, r):
     else: f = correct(f_arr)
     return f
 def arrow(base, arrows, n, a_arg=0):
+    if tofloat(arrows) > 40: raise ValueError("Arrow count must be under 40")
     def _arrow_raw(base, arrows, n, a_arg=0):
         r_correct = correct(arrows)
         if not _is_int_like(arrows) or tofloat(r_correct) < 0:
@@ -1349,5 +1350,6 @@ def format(num, small=False):
         val = math.log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
