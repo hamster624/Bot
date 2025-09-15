@@ -309,7 +309,7 @@ async def calc(ctx, *, expression: str):
             "logbase": logbase
         }
         try:
-            value, elapsed = await safe_eval(expr, safe_globals, timeout=EVAL_TIMEOUT)
+            value, elapsed = await safe_eval_thread(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
             await ctx.reply("⏱ Took too long (>0.5s) — skipped.", mention_author=False)
             return
@@ -418,7 +418,7 @@ async def calc_slash(
             "logbase": logbase
         }
         try:
-            value, elapsed = await safe_eval(expr, safe_globals, timeout=EVAL_TIMEOUT)
+            value, elapsed = await safe_eval_thread(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
             await interaction.followup.send("⏱ Took too long (>0.5s) — skipped.")
             return
@@ -1369,6 +1369,7 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
