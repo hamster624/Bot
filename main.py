@@ -141,8 +141,8 @@ async def on_message(message):
     if counting_channel_id and message.channel.id == counting_channel_id:
         content = message.content.strip()
         if not content: return
-		content = content.replace("^", "**")
-		content = rewrite_exponent(content)
+        content = content.replace("^", "**")
+        content = rewrite_exponent(content)
         first_token = content.split()[0]
 
         safe_globals = {
@@ -397,9 +397,9 @@ async def calc_slash(
             "logbase": logbase
         }
         start_time = time.time()
-		expr = expression.replace("^", "**")
-		expr = rewrite_exponent(expr)
-		value = eval(expr, safe_globals, {})
+        expr = expression.replace("^", "**")
+        expr = rewrite_exponent(expr)
+        value = eval(expr, safe_globals, {})
         fmt_name = fmt.lower()
         if fmt_name not in formats:
             fmt_name = "format"
@@ -1347,4 +1347,5 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
