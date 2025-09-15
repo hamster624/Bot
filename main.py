@@ -16,7 +16,7 @@ import multiprocessing as mp
 import traceback
 
 _executor = ThreadPoolExecutor(max_workers=4)
-EVAL_TIMEOUT = 0.5  # seconds
+EVAL_TIMEOUT = 0.1
 # ---------------------
 # Flask Keep-Alive
 # ---------------------
@@ -1391,6 +1391,7 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
