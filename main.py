@@ -245,8 +245,8 @@ def _eval_in_subprocess(expr: str, safe_globals: dict, q: mp.Queue):
     try:
         res = eval(expr, safe_globals, {})
         q.put(('OK', res))
-    except Exception:
-        q.put(('ERR', traceback.format_exc()))
+    except Exception as e:
+        q.put(('ERR', e))
 
 def run_eval_in_subprocess(expr: str, safe_globals: dict, timeout: float):
     q: mp.Queue = mp.Queue()
@@ -262,7 +262,8 @@ def run_eval_in_subprocess(expr: str, safe_globals: dict, timeout: float):
         if status == 'OK':
             return payload
         else:
-            raise RuntimeError(f"Child process raised an exception:\n{payload}")
+            raise payload  # this will just raise OverflowError: (34, 'Numerical result out of range')
+
     else:
         raise RuntimeError("No output from subprocess (maybe it crashed or couldn't pickle result).")
 
@@ -1391,6 +1392,7 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
