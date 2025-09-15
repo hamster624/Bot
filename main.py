@@ -365,7 +365,15 @@ async def calc_slash(
         "array": correct,
     }
 
-    await interaction.response.defer(thinking=True)
+    # Attempt to defer. If it fails, we'll record that and fall back later.
+    deferred = False
+    try:
+        await interaction.response.defer(thinking=True)
+        deferred = True
+    except Exception as e:
+        # Log full trace to your log so you can debug timing / race conditions
+        logging.exception("Failed to defer interaction (will fall back to channel send).")
+        # Don't re-raise — we'll continue and send result using channel/send or DM.
 
     try:
         expr = expression.replace("^", "**")
@@ -1361,6 +1369,7 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
