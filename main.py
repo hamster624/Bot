@@ -12,6 +12,9 @@ import math
 import re
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import multiprocessing as mp
+import traceback
+
 _executor = ThreadPoolExecutor(max_workers=4)
 EVAL_TIMEOUT = 0.5  # seconds
 # ---------------------
@@ -238,18 +241,43 @@ async def guide(ctx):
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
     await ctx.send(help_message)
-async def safe_eval_thread(expr: str, safe_globals: dict, timeout: float = EVAL_TIMEOUT):
+def _eval_in_subprocess(expr: str, safe_globals: dict, q: mp.Queue):
+    try:
+        res = eval(expr, safe_globals, {})
+        q.put(('OK', res))
+    except Exception:
+        q.put(('ERR', traceback.format_exc()))
+
+def run_eval_in_subprocess(expr: str, safe_globals: dict, timeout: float):
+    q: mp.Queue = mp.Queue()
+    p = mp.Process(target=_eval_in_subprocess, args=(expr, safe_globals, q), daemon=True)
+    p.start()
+    p.join(timeout)
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        raise TimeoutError(f"Evaluation timed out after {timeout} seconds (process terminated).")
+    if not q.empty():
+        status, payload = q.get()
+        if status == 'OK':
+            return payload
+        else:
+            raise RuntimeError(f"Child process raised an exception:\n{payload}")
+    else:
+        raise RuntimeError("No output from subprocess (maybe it crashed or couldn't pickle result).")
+
+async def safe_eval_process(expr: str, safe_globals: dict, timeout: float = EVAL_TIMEOUT):
     loop = asyncio.get_running_loop()
     start = time.time()
     try:
-        result = await asyncio.wait_for(
-            loop.run_in_executor(_executor, eval, expr, safe_globals, {}),
-            timeout=timeout
-        )
+        result = await loop.run_in_executor(_executor, run_eval_in_subprocess, expr, safe_globals, timeout)
         elapsed = time.time() - start
         return result, elapsed
-    except asyncio.TimeoutError:
-        raise TimeoutError(f"Evaluation timed out after {timeout} seconds")
+    except TimeoutError:
+        raise
+    except Exception:
+        raise
+
 @bot.command()
 async def calc(ctx, *, expression: str):
     formats = {
@@ -1369,6 +1397,7 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
