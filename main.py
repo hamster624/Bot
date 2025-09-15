@@ -10,7 +10,10 @@ from flask import Flask
 from threading import Thread
 import math
 import re
-
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+_executor = ThreadPoolExecutor(max_workers=4)
+EVAL_TIMEOUT = 0.5  # seconds
 # ---------------------
 # Flask Keep-Alive
 # ---------------------
@@ -122,8 +125,6 @@ async def current(ctx):
         if guild_state['counting_channel_id'] else "⚠ No counting channel set!"
     )
 
-def rewrite_exponent(expr: str) -> str:
-    return re.sub(r'(\d+|\w+|\([^()]*\))\s*\*\*\s*(\d+|\w+|\([^()]*\))',r'pow(\1, \2)', expr)
 # ---------------------
 # Counting Logic
 # ---------------------
@@ -142,7 +143,6 @@ async def on_message(message):
         content = message.content.strip()
         if not content: return
         content = content.replace("^", "**")
-        content = rewrite_exponent(content)
         first_token = content.split()[0]
 
         safe_globals = {
@@ -238,7 +238,18 @@ async def guide(ctx):
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
     await ctx.send(help_message)
-
+async def safe_eval(expr: str, safe_globals: dict, timeout: float = EVAL_TIMEOUT):
+    loop = asyncio.get_running_loop()
+    start = time.time()
+    try:
+        result = await asyncio.wait_for(
+            loop.run_in_executor(_executor, eval, expr, safe_globals, {}),
+            timeout=timeout
+        )
+        elapsed = time.time() - start
+        return result, elapsed
+    except asyncio.TimeoutError:
+        raise TimeoutError(f"Evaluation timed out after {timeout} seconds")
 @bot.command()
 async def calc(ctx, *, expression: str):
     formats = {
@@ -256,7 +267,6 @@ async def calc(ctx, *, expression: str):
             tokens = tokens[:-1]
 
         expr = " ".join(tokens).replace("^", "**")
-        expr = rewrite_exponent(expr)
 
         safe_globals = {
             "__builtins__": {},
@@ -298,10 +308,14 @@ async def calc(ctx, *, expression: str):
             "ln": ln,
             "logbase": logbase
         }
-        start_time = time.time()
-        value = eval(expr, safe_globals, {})
-        result = formats[fmt_name](value)
-        elapsed = time.time() - start_time
+        try:
+            value, elapsed = await safe_eval(expr, safe_globals, timeout=EVAL_TIMEOUT)
+        except TimeoutError:
+            await ctx.reply("⏱ Took too long (>0.5s) — skipped.", mention_author=False)
+            return
+
+        # Format result
+        result = formats.get(fmt_name, format)(value)
 
         await ctx.reply(
             f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds",
@@ -309,7 +323,6 @@ async def calc(ctx, *, expression: str):
         )
     except Exception as e:
         await ctx.reply(f"❌ Error: `{e}`", mention_author=False)
-
 # ---------------------
 # Guide Command (slash)
 # ---------------------
@@ -396,21 +409,22 @@ async def calc_slash(
             "ln": ln,
             "logbase": logbase
         }
-        start_time = time.time()
-        expr = expression.replace("^", "**")
-        expr = rewrite_exponent(expr)
-        value = eval(expr, safe_globals, {})
+        try:
+            value, elapsed = await safe_eval(expr, safe_globals, timeout=EVAL_TIMEOUT)
+        except TimeoutError:
+            await interaction.followup.send("⏱ Took too long (>0.5s) — skipped.")
+            return
+
         fmt_name = fmt.lower()
         if fmt_name not in formats:
             fmt_name = "format"
 
         result = formats[fmt_name](value)
-        elapsed = time.time() - start_time
 
         await interaction.followup.send(
             f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
         )
-    except:
+    except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
 import math
 #--Edtiable things--
@@ -1347,5 +1361,6 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
