@@ -238,7 +238,7 @@ async def guide(ctx):
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
     await ctx.send(help_message)
-async def safe_eval(expr: str, safe_globals: dict, timeout: float = EVAL_TIMEOUT):
+async def safe_eval_thread(expr: str, safe_globals: dict, timeout: float = EVAL_TIMEOUT):
     loop = asyncio.get_running_loop()
     start = time.time()
     try:
@@ -1369,6 +1369,7 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
