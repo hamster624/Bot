@@ -9,6 +9,7 @@ import json
 from flask import Flask
 from threading import Thread
 import math
+import re
 
 # ---------------------
 # Flask Keep-Alive
@@ -121,6 +122,8 @@ async def current(ctx):
         if guild_state['counting_channel_id'] else "⚠ No counting channel set!"
     )
 
+def rewrite_exponent(expr: str) -> str:
+    return re.sub(r'(\d+|\w+|\([^()]*\))\s*\*\*\s*(\d+|\w+|\([^()]*\))',r'pow(\1, \2)', expr)
 # ---------------------
 # Counting Logic
 # ---------------------
@@ -137,10 +140,9 @@ async def on_message(message):
 
     if counting_channel_id and message.channel.id == counting_channel_id:
         content = message.content.strip()
-        if not content:
-            return
-
-        content = content.replace("^", "**")
+        if not content: return
+		content = content.replace("^", "**")
+		content = rewrite_exponent(content)
         first_token = content.split()[0]
 
         safe_globals = {
@@ -247,12 +249,15 @@ async def calc(ctx, *, expression: str):
         "array": correct,
     }
     try:
-        tokens = expression.strip().split(" ")
+        tokens = expression.split()
         fmt_name = "format"
-        if tokens[-1].lower() in formats:
+        if tokens and tokens[-1].lower() in formats:
             fmt_name = tokens[-1].lower()
             tokens = tokens[:-1]
+
         expr = " ".join(tokens).replace("^", "**")
+        expr = rewrite_exponent(expr)
+
         safe_globals = {
             "__builtins__": {},
             "math": math,
@@ -294,15 +299,16 @@ async def calc(ctx, *, expression: str):
             "logbase": logbase
         }
         start_time = time.time()
-        try:
-            value = eval(expr, safe_globals, {})
-        except:
-            value = expr
+        value = eval(expr, safe_globals, {})
         result = formats[fmt_name](value)
         elapsed = time.time() - start_time
-        await ctx.reply(f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds", mention_author=False)
+
+        await ctx.reply(
+            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds",
+            mention_author=False
+        )
     except Exception as e:
-        await ctx.reply(f"Error: `{e}`", mention_author=False)
+        await ctx.reply(f"❌ Error: `{e}`", mention_author=False)
 
 # ---------------------
 # Guide Command (slash)
@@ -391,11 +397,9 @@ async def calc_slash(
             "logbase": logbase
         }
         start_time = time.time()
-        try:
-            value = eval(expr, safe_globals, {})
-        except Exception:
-            value = expr
-
+		expr = expression.replace("^", "**")
+		expr = rewrite_exponent(expr)
+		value = eval(expr, safe_globals, {})
         fmt_name = fmt.lower()
         if fmt_name not in formats:
             fmt_name = "format"
@@ -406,7 +410,7 @@ async def calc_slash(
         await interaction.followup.send(
             f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
         )
-    except Exception as e:
+    except:
         await interaction.followup.send(f"❌ Error: `{e}`")
 import math
 #--Edtiable things--
@@ -1343,3 +1347,4 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
