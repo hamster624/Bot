@@ -339,7 +339,7 @@ async def calc(ctx, *, expression: str):
         try:
             value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
-            await ctx.reply("⏱ Took too long (>0.5s) — skipped.", mention_author=False)
+            await ctx.reply("⏱ Took too long (>0.1s) — skipped.", mention_author=False)
             return
         result = formats.get(fmt_name, format)(value)
 
@@ -442,7 +442,7 @@ async def calc_slash(
         try:
             value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
-            await interaction.followup.send("⏱ Took too long (>0.5s) — skipped.")
+            await interaction.followup.send("⏱ Took too long (>0.1s) — skipped.")
             return
 
         fmt_name = fmt.lower()
@@ -1391,6 +1391,7 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
