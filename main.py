@@ -224,7 +224,7 @@ async def guide(ctx):
     formats = ["format","array","hyper_e","suffix", "string"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
-                  "fact (factorial)", "gamma", "OoMs",
+                  "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
                   "floor", "ceil"]
@@ -312,7 +312,7 @@ async def guide_slash(interaction: discord.Interaction):
     formats = ["format","array","hyper_e","suffix", "string"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
-                  "fact (factorial)", "gamma", "OoMs",
+                  "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
                   "floor", "ceil"]
@@ -431,6 +431,7 @@ MultOnes = [
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
+_log10 = math.log10
 # You can ignore these, these are only to help the code
 def correct(x):
     if isinstance(x, (int, float)): 
@@ -445,25 +446,21 @@ def correct(x):
         arr = x[:]
         if not arr: return [0, 0]
         if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
-        if arr[0] not in (0, 1): raise ValueError("First element must be 0 (positive) or 1 (negative)")
+        if arr[0] not in (0, 1): raise ValueError("First element must be 0 (positive) or 1 (negative) (array:{arr})")
 
         for i in range(1, len(arr)):
             if isinstance(arr[i], str):
-                try:
-                    arr[i] = float(arr[i])
-                except ValueError:
-                    raise ValueError(f"Element at index {i} must be a number")
-            elif not isinstance(arr[i], (int, float)):
-                raise ValueError(f"Element at index {i} must be a number")
-            if arr[i] < 0:
-                raise ValueError(f"Element at index {i} must be positive")
+                try: arr[i] = float(arr[i])
+                except ValueError: raise ValueError(f"Element at index {i} must be a number (array:{arr})")
+            elif not isinstance(arr[i], (int, float)): raise ValueError(f"Element at index {i} must be a number (array:{arr})")
+            if arr[i] < 0: raise ValueError(f"Element at index {i} must be positive (array:{arr})")
 
         changed = True
         while changed:
             changed = False
             for i in range(len(arr)-1, 0, -1):
                 if arr[i] > MAX_SAFE_INT:
-                    L = math.log10(arr[i])
+                    L = _log10(arr[i])
                     if i == 1:
                         arr[1] = L
                         if len(arr) > 2: arr[2] += 1
@@ -483,7 +480,7 @@ def correct(x):
             if isinstance(arr[i], float) and arr[i] <= MAX_SAFE_INT and arr[i].is_integer():
                 arr[i] = int(arr[i])
 
-        while len(arr) >= 3 and arr[2] >= 1 and arr[1] <= math.log10(MAX_SAFE_INT):
+        while len(arr) >= 3 and arr[2] >= 1 and arr[1] <= _log10(MAX_SAFE_INT):
             collapsed_val = 10 ** arr[1]
             if arr[2] == 1:
                 if len(arr) == 3: arr = [arr[0], collapsed_val]
@@ -508,7 +505,6 @@ def correct(x):
         while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
 
         return arr
-
     raise TypeError("Unsupported type for correct")
 def fromString(s):
     s = s.strip()
@@ -706,7 +702,7 @@ def polarize(array, smallTop=False):
     if len(pairs) <= 1 and pairs[0][0] == 0:
         if smallTop:
             while bottom >= 10:
-                bottom = math.log10(bottom)
+                bottom = _log10(bottom)
                 top += 1
                 height = 1
     else:
@@ -717,20 +713,20 @@ def polarize(array, smallTop=False):
         while (bottom >= 10) or (elem < len(pairs)) or (smallTop and top >= 10):
             if bottom >= 10:
                 if height == 1:
-                    bottom = math.log10(bottom)
+                    bottom = _log10(bottom)
                     if bottom >= 10:
-                        bottom = math.log10(bottom)
+                        bottom = _log10(bottom)
                         top += 1
                 elif height < MAX_LOGP1_REPEATS:
-                    if bottom >= 1e10: bottom = math.log10(math.log10(math.log10(bottom))) + 2
-                    else: bottom = math.log10(math.log10(bottom)) + 1
+                    if bottom >= 1e10: bottom = _log10(_log10(_log10(bottom))) + 2
+                    else: bottom = _log10(_log10(bottom)) + 1
                     for _i in range(2, height):
-                        bottom = math.log10(bottom) + 1
+                        bottom = _log10(bottom) + 1
                 else: bottom = 1
                 top += 1
             else:
                 if elem == len(pairs) - 1 and pairs[elem][0] == height and not (smallTop and top >= 10): break
-                bottom = math.log10(bottom) + top
+                bottom = _log10(bottom) + top
                 height += 1
                 if elem < len(pairs) and height > pairs[elem][0]: elem += 1
                 if elem < len(pairs):
@@ -740,7 +736,7 @@ def polarize(array, smallTop=False):
                         diff = pairs[elem][0] - height
                         if diff < MAX_LOGP1_REPEATS:
                             for _ in range(diff):
-                                bottom = math.log10(bottom) + 1
+                                bottom = _log10(bottom) + 1
                         else: bottom = 1
                         height = pairs[elem][0]
                         top = pairs[elem][1] + 1
@@ -838,7 +834,7 @@ def lambertw(x):
 def log(x):
     arr = correct(x)
     if arr[0] == 1: raise ValueError("Can't log a negative")
-    if len(arr) == 2: return correct(math.log10(arr[1]))
+    if len(arr) == 2: return correct(_log10(arr[1]))
     if len(arr) == 3: return correct([0, arr[1], arr[2] - 1])
     if len(arr) > 3: return correct(arr)
     return correct(arr)
@@ -848,16 +844,16 @@ def slog(x): return hyper_log(x, 2)
 def plog(x): return hyper_log(x, 3)
 def hlog(x): return hyper_log(x, 4)
 def hyper_log(x, k):
+    if not _is_int_like(k) or tofloat(k) < 0: raise ValueError("hyper_log height must be a non-negative integer-like value")
     if k < 1: raise ValueError("k must be >= 1")
     arr = correct(x)
-    if arr[0] == 1: raise ValueError("Can't plog a negative")
-    if lte(arr, 10): return correct(math.log10(arr[1]))
-    if k == 1: return correct(math.log10(tofloat(arr)))
-    if lte(arr, [0, 10000000000] + [8] * max(0, k - 2)): return correct(math.log10(tofloat(hyper_log(arr, k - 1))) + 1)
-    if len(arr) < (k + 1): return correct(math.log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
+    if arr[0] == 1: raise ValueError("Can't hyper_log a negative")
+    if lte(arr, 10): return correct(_log10(arr[1]))
+    if k == 1: return correct(_log10(tofloat(arr)))
+    if lte(arr, [0, 10000000000] + [8] * max(0, k - 2)): return correct(_log10(tofloat(hyper_log(arr, k - 1))) + 1)
+    if len(arr) < (k + 1): return correct(_log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
     if len(arr) == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
     if len(arr) == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
-
 def addlayer(x):
     arr = correct(x)
     if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-arr[1])])
@@ -883,11 +879,11 @@ def add(a, b):
         if A[1] > B[1]:
             diff = B[1] - A[1]
             if diff < -15: log_val = A[1]
-            else: log_val = A[1] + math.log10(1 + 10**diff)
+            else: log_val = A[1] + _log10(1 + 10**diff)
         else:
             diff = A[1] - B[1]
             if diff < -15: log_val = B[1]
-            else: log_val = B[1] + math.log10(1 + 10**diff)
+            else: log_val = B[1] + _log10(1 + 10**diff)
         return correct([A[0], log_val] + ([1] if len(A) > 2 else []))
     if (len(A) >= 3 and len(B) == 2) or (len(B) >= 3 and len(A) == 2):
         if len(B) >= 3:
@@ -904,11 +900,11 @@ def add(a, b):
             if fa > fb:
                 diff = fb - fa
                 if diff < -15: log_val = fa
-                else: log_val = fa + math.log10(1 + 10**diff)
+                else: log_val = fa + _log10(1 + 10**diff)
             else:
                 diff = fa - fb
                 if diff < -15: log_val = fb
-                else: log_val = fb + math.log10(1 + 10**diff)
+                else: log_val = fb + _log10(1 + 10**diff)
             return correct([A[0], log_val] + ([1] if len(A) > 2 else []))
         return maximum(A, B)
     return maximum(A, B)
@@ -1050,11 +1046,9 @@ def tetration(a, r):
     else: f = correct(f_arr)
     return f
 def arrow(base, arrows, n, a_arg=0):
-    if tofloat(arrows) > 40: raise ValueError("Arrow count must be under 40")
     def _arrow_raw(base, arrows, n, a_arg=0):
         r_correct = correct(arrows)
-        if not _is_int_like(arrows) or tofloat(r_correct) < 0:
-            raise ValueError("arrows must be a non-negative integer-like value")
+        if not _is_int_like(arrows) or tofloat(r_correct) < 0: raise ValueError("arrows must be a non-negative integer-like value")
         r = int(tofloat(r_correct))
         t = correct(base)
         n = correct(n)
@@ -1176,22 +1170,20 @@ def string(arr, top=True):
     arr = correct(arr)
     sign = "-" if arr[0] == 1 and top else ""
     if len(arr) == 2: return f"{sign}{arr[1]}"
-
-    if len(arr) == 3:
-        if gte(arr, [0, 10000000000, 8]): return f"{sign}(10^)^{arr[2]} {arr[1]}"
-        else: return f"{sign}{'e'*arr[2]}{arr[1]}"
-
-    depth = len(arr) - 2
-    n = arr[-1]
-    inner = string(arr[:-1], top=False) 
-
-    if depth <= 4:
-        arrows = "^" * depth
-        if n < 2: return f"{sign}10{arrows}{inner}"
-        else: return f"{sign}(10{arrows})^{n}{' ' + inner if inner else ''}"
-    else:
-        if n < 2: return f"{sign}10{{{depth}}}{inner}"
-        else: return f"{sign}(10{{{depth}}})^{n}{' ' + inner if inner else ''}"
+    e_count = arr[2]
+    if e_count <= 10: inner = f"{'e'*e_count}{arr[1]}"
+    else: inner = f"(10^)^{e_count} {arr[1]}"
+    for d in range(3, len(arr)):
+        n = arr[d]
+        if n == 0: continue
+        layer_depth = d - 1
+        if layer_depth <= 3:
+            arrows = "^" * layer_depth
+            arrow_str = f"10{arrows}"
+        else: arrow_str = f"10{{{layer_depth}}}"
+        if n < 2: inner = f"{arrow_str}{inner}"
+        else: inner = f"({arrow_str})^{n} {inner}"
+    return sign + inner
 
 def hyper_e(x):
     arr = correct(x)
@@ -1205,11 +1197,11 @@ def _suffix(x):
     x = correct(x)
     if x[0] == 1: return "-" + _suffix([0] + x[1:])
     if len(x) == 3 and x[2] == 2 and x[1] < 308.2547155599167: x = [0, 10**x[1], x[2]-1]
-    if len(x) > 2 and x[2] > 2 or math.log10(x[1]) >= 308.2547155599167: return x
+    if len(x) > 2 and x[2] > 2 or _log10(x[1]) >= 308.2547155599167: return x
     if len(x) == 2:
         num_val = x[1]
         if num_val < 1000: return str(round(num_val, decimals))
-        exponent = math.floor(math.log10(num_val))
+        exponent = math.floor(_log10(num_val))
         mantissa = num_val / (10 ** exponent)
         SNumber = exponent
         SNumber1 = mantissa
@@ -1276,6 +1268,7 @@ def _suffix(x):
 
 def suffix(x):
     x = correct(x)
+    if gt(x, [0, 10000000000, 8]): return format(x)
     if lt(x, [0, max_suffix, 1]): return _suffix(x)
     max_repeats = 10
     e_count = 0
@@ -1303,7 +1296,7 @@ def format(num, small=False):
         bottom = array_search(n, 0)
         rep = array_search(n, 1) - 1
         if bottom >= 1e9:
-            bottom = math.log10(bottom)
+            bottom = _log10(bottom)
             rep += 1
         m = 10 ** (bottom - math.floor(bottom))
         e = math.floor(bottom)
@@ -1347,11 +1340,6 @@ def format(num, small=False):
         return "H" + format(n_val, decimals)
     else:
         pol = polarize(n, True)
-        val = math.log10(pol['bottom']) + pol['top']
+        val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
-
-
-
-
-
