@@ -337,12 +337,10 @@ async def calc(ctx, *, expression: str):
             "logbase": logbase
         }
         try:
-            value, elapsed = await safe_eval_thread(expr, safe_globals, timeout=EVAL_TIMEOUT)
+            value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
             await ctx.reply("⏱ Took too long (>0.5s) — skipped.", mention_author=False)
             return
-
-        # Format result
         result = formats.get(fmt_name, format)(value)
 
         await ctx.reply(
@@ -392,16 +390,12 @@ async def calc_slash(
         "suffix": suffix,
         "array": correct,
     }
-
-    # Attempt to defer. If it fails, we'll record that and fall back later.
     deferred = False
     try:
         await interaction.response.defer(thinking=True)
         deferred = True
     except Exception as e:
-        # Log full trace to your log so you can debug timing / race conditions
         logging.exception("Failed to defer interaction (will fall back to channel send).")
-        # Don't re-raise — we'll continue and send result using channel/send or DM.
 
     try:
         expr = expression.replace("^", "**")
@@ -446,7 +440,7 @@ async def calc_slash(
             "logbase": logbase
         }
         try:
-            value, elapsed = await safe_eval_thread(expr, safe_globals, timeout=EVAL_TIMEOUT)
+            value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
             await interaction.followup.send("⏱ Took too long (>0.5s) — skipped.")
             return
@@ -1397,6 +1391,7 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
