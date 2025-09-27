@@ -262,7 +262,7 @@ def run_eval_in_subprocess(expr: str, safe_globals: dict, timeout: float):
         if status == 'OK':
             return payload
         else:
-            raise payload  # this will just raise OverflowError: (34, 'Numerical result out of range')
+            raise payload
 
     else:
         raise RuntimeError("No output from subprocess (maybe it crashed or couldn't pickle result).")
@@ -458,11 +458,14 @@ async def calc_slash(
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
 import math
+# if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
+#import sys
+#sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 6 # How many decimals (duh). Max 16
 precise_arrow = False # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
-arrow_precision = 18 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
-max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
+max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -739,9 +742,14 @@ def _to_pair_array(arr):
     for i in range(2, len(arr)): pairs.append([i-1, float(arr[i])])
     return pairs
 
-def polarize(array, smallTop=False):
+def polarize(array, smallTop=False, skip=False):  
     try: array = correct(array)
     except: pass
+    if skip == False:
+        if len(array) >= 16:
+            result = polarize(array, smallTop=smallTop, skip=True)
+            return {"bottom": result["bottom"], "top": result["top"], "height": len(array)-1}
+
     pairs = _to_pair_array(array)
     if len(pairs) == 0:
         pairs = [[0, 0]]
@@ -789,11 +797,10 @@ def polarize(array, smallTop=False):
                             for _ in range(diff):
                                 bottom = _log10(bottom) + 1
                         else: bottom = 1
-                        height = pairs[elem][0]
                         top = pairs[elem][1] + 1
                     else: top = 1
                 else: top = 1
-    return {"bottom": bottom, "top": top, "height": int(height)}
+    return {"bottom": bottom, "top": top, "height": len(array)-1}
 
 def array_search(arr, height):
     pairs = _to_pair_array(arr)
@@ -1182,14 +1189,11 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
 
 def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     r_correct = correct(arrows)
-    if not _is_int_like(arrows) or tofloat(r_correct) < 0:
-        raise ValueError("arrows must be a non-negative integer-like value")
-
+    if not _is_int_like(arrows) or tofloat(r_correct) < 0: raise ValueError("arrows must be a non-negative integer-like value")
     r = int(tofloat(r_correct))
     t = correct(base)
     n_corr = correct(n)
-    if lt(n_corr, [0, 0]):
-        raise ValueError("n must be >= 0")
+    if lt(n_corr, [0, 0]): raise ValueError("n must be >= 0")
 
     res = _arrow(t, r, n_corr, a_arg, prec)
     return correct(res)
@@ -1242,14 +1246,16 @@ def hyper_e(x):
         arr = arr[:3] + after
     return sign + "E" + "#".join(map(str, arr[1:]))
 # Literally a straight copy from the roblox OmegaNum.lua
-def _suffix(x):
+def _suffix(x, suffix_decimals=decimals):
     x = correct(x)
     if x[0] == 1: return "-" + _suffix([0] + x[1:])
     if len(x) == 3 and x[2] == 2 and x[1] < 308.2547155599167: x = [0, 10**x[1], x[2]-1]
     if len(x) > 2 and x[2] > 2 or _log10(x[1]) >= 308.2547155599167: return x
     if len(x) == 2:
         num_val = x[1]
-        if num_val < 1000: return str(round(num_val, decimals))
+        if num_val < 1000: 
+            val = round(num_val, suffix_decimals)
+            return str(int(val) if val == int(val) else val)
         exponent = math.floor(_log10(num_val))
         mantissa = num_val / (10 ** exponent)
         SNumber = exponent
@@ -1260,23 +1266,23 @@ def _suffix(x):
 
     leftover = SNumber % 3
     SNumber = math.floor(SNumber / 3) - 1
-    
-    if SNumber <= -1:
-        base_num = SNumber1 * (10 ** leftover)
-        return str(round(base_num, decimals))
-    
-    if SNumber == 0:
-        base_num = SNumber1 * (10 ** leftover)
-        return str(round(base_num, decimals)) + "K"
-    elif SNumber == 1:
-        base_num = SNumber1 * (10 ** leftover)
-        return str(round(base_num, decimals)) + "M"
-    elif SNumber == 2:
-        base_num = SNumber1 * (10 ** leftover)
-        return str(round(base_num, decimals)) + "B"
-    
+
+    def format_with_suffix(val, suffix):
+        val_rounded = round(val, suffix_decimals)
+        if val_rounded >= 1000:
+            val_rounded /= 1000
+            next_suffix = {"K": "M", "M": "B", "B": "T"}.get(suffix, "")
+            suffix = next_suffix
+        return str(int(val_rounded) if val_rounded == int(val_rounded) else val_rounded) + suffix
+
+    base_num = SNumber1 * (10 ** leftover)
+
+    if SNumber <= -1: return str(int(round(base_num, suffix_decimals))) if base_num == int(base_num) else str(round(base_num, suffix_decimals))
+    elif SNumber == 0: return format_with_suffix(base_num, "K")
+    elif SNumber == 1: return format_with_suffix(base_num, "M")
+    elif SNumber == 2: return format_with_suffix(base_num, "B")
+
     txt = ""
-    
     def suffixpart(n):
         nonlocal txt
         Hundreds = math.floor(n / 100)
@@ -1286,7 +1292,7 @@ def _suffix(x):
         txt += FirstOnes[Ones]
         txt += SecondOnes[Tens]
         txt += ThirdOnes[Hundreds]
-    
+
     def suffixpart2(n):
         nonlocal txt
         if n > 0: n += 1
@@ -1298,12 +1304,11 @@ def _suffix(x):
         txt += FirstOnes[Ones]
         txt += SecondOnes[Tens]
         txt += ThirdOnes[Hundreds]
-    
+
     if SNumber < 1000:
         suffixpart(SNumber)
-        base_num = SNumber1 * (10 ** leftover)
-        return str(round(base_num, decimals)) + txt
-    
+        return format_with_suffix(base_num, "") + txt
+
     for i in range(len(MultOnes)-1, -1, -1):
         power_val = 10 ** (i * 3)
         if SNumber >= power_val:
@@ -1311,27 +1316,93 @@ def _suffix(x):
             suffixpart2(part_val - 1)
             txt += MultOnes[i]
             SNumber = SNumber % power_val
-    
-    base_num = SNumber1 * (10 ** leftover)
-    return str(round(base_num, decimals)) + txt
+    return format_with_suffix(base_num, "") + txt
 
-def suffix(x):
-    x = correct(x)
-    if gt(x, [0, 10000000000, 8]): return format(x)
-    if lt(x, [0, max_suffix, 1]): return _suffix(x)
-    max_repeats = 7
-    e_count = 0
-    while gte(x, [0, max_suffix, 1]) and e_count < max_repeats:
-        x = log(x)
-        e_count += 1
-    if e_count == 0: return x
-    return "e" * e_count + _suffix(x)
+def suffix(num, small=False):
+    precision2 = max(5, decimals)
+    precision3 = max(4, decimals)
+    precision4 = max(6, decimals)
+    n = correct(num)
+    if len(n) == 2 and abs(n[1]) < 1e-308: return f"{0:.{decimals}f}"
+    if n[0] == 1: return "-" + suffix(neg(n), decimals)
+    if lt(n, 0.0001):
+        inv = 1/tofloat(n)
+        return "1/" + _suffix(inv)
+    elif lt(n, 1): return regular_format(n, decimals + (2 if small else 0))
+    elif lt(n, 1000): return regular_format(n, decimals)
+    elif lt(n, 1e9): return _suffix(n)
+    elif lt(n, [0, max_suffix, 1]): return _suffix(n)
+    elif lt(n, [0, max_suffix, 2]):
+        bottom = array_search(n, 0)
+        rep = array_search(n, 1) - 1
+        if bottom >= 1e9:
+            bottom = _log10(bottom)
+            rep += 1
+        m = 10 ** (bottom - math.floor(bottom))
+        e = math.floor(bottom)
+        p = precision2
+        return regular_format([0, m], p) + "e" + _suffix([0, e, 1])
+    elif lt(n, [0, max_suffix, 3]):
+        bottom = array_search(n, 0)
+        rep = array_search(n, 1) - 1
+        if bottom >= 1e9:
+            bottom = _log10(bottom)
+            rep += 1
+        m = 10 ** (bottom - math.floor(bottom))
+        e = math.floor(bottom)
+        p = precision2
+        return "e" + regular_format([0, m], p) + "e" + _suffix([0, e], 0)
+    elif lt(n, [0, 10000000000, 3]):
+        bottom = array_search(n, 0)
+        rep = array_search(n, 1) - 1
+        if bottom >= 1e9:
+            bottom = _log10(bottom)
+            rep += 1
+        m = 10 ** (bottom - math.floor(bottom))
+        e = math.floor(bottom)
+        p = precision2
+        return "ee" + regular_format([0, m], p) + "e" + _suffix([0, e], 0)
+    pol = polarize(n)
+    if lt(n, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + _suffix(pol['top'], 0)
+    elif lt(n, [0, 10000000000, 8, 3]):
+        rep = array_search(n, 2)
+        if rep >= 1:
+            n_arr = set_to_zero(n, 2)
+            return ("F" * int(rep)) + suffix(n_arr, decimals)
+        n_val = array_search(n, 1) + 1
+        if gte(n, [0, 10, n_val]):
+            n_val += 1
+        return "F" + format(n_val, decimals)
+    elif lt(n, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + _suffix(pol['top'], 0)
+    elif lt(n, [0, 10000000000, 8, 8, 3]):
+        rep = array_search(n, 3)
+        if rep >= 1:
+            n_arr = set_to_zero(n, 3)
+            return ("G" * int(rep)) + suffix(n_arr, decimals)
+        n_val = array_search(n, 2) + 1
+        if gte(n, [0, 10, 0, n_val]):
+            n_val += 1
+        return "G" + suffix(n_val, decimals)
+    elif lt(n, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + _suffix(pol['top'], 0)
+    elif lt(n, [0, 10000000000, 8, 8, 8, 3]):
+        rep = array_search(n, 4)
+        if rep >= 1:
+            n_arr = set_to_zero(n, 4)
+            return ("H" * int(rep)) + suffix(n_arr, decimals)
+        n_val = array_search(n, 3) + 1
+        if gte(n, [0, 10, 0, 0, n_val]):
+            n_val += 1
+        return "H" + suffix(n_val, decimals)
+    else:
+        pol = polarize(n, True)
+        val = _log10(pol['bottom']) + pol['top']
+        return regular_format([0, val], precision4) + "J" + _suffix(pol['height'])
 
 # From https://github.com/cloudytheconqueror/letter-notation-format
 def format(num, small=False):
-    precision2 = max(3, decimals)
+    precision2 = max(5, decimals)
     precision3 = max(4, decimals)
-    precision4 = max(10, decimals)
+    precision4 = max(6, decimals)
     n = correct(num)
     if len(n) == 2 and abs(n[1]) < 1e-308: return f"{0:.{decimals}f}"
     if n[0] == 1: return "-" + format(neg(n), decimals)
@@ -1349,11 +1420,10 @@ def format(num, small=False):
             rep += 1
         m = 10 ** (bottom - math.floor(bottom))
         e = math.floor(bottom)
-        p = precision2 if bottom < 1_000_000 else 0
+        p = precision2 if bottom < 1_000_000 else 2
         return ("e" * int(rep)) + regular_format([0, m], p) + "e" + comma_format(e)
-    elif lt(n, [0, 10000000000, 999998]):
-        pol = polarize(n)
-        return regular_format([0, pol['bottom']], precision3) + "F" + comma_format(pol['top'])
+    pol = polarize(n)
+    if lt(n, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 3]):
         rep = array_search(n, 2)
         if rep >= 1:
@@ -1363,9 +1433,7 @@ def format(num, small=False):
         if gte(n, [0, 10, n_val]):
             n_val += 1
         return "F" + format(n_val, decimals)
-    elif lt(n, [0, 10000000000, 8, 999998]):   
-        pol = polarize(n)
-        return regular_format([0, pol['bottom']], precision3) + "G" + comma_format(pol['top'])
+    elif lt(n, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 8, 3]):
         rep = array_search(n, 3)
         if rep >= 1:
@@ -1375,9 +1443,7 @@ def format(num, small=False):
         if gte(n, [0, 10, 0, n_val]):
             n_val += 1
         return "G" + format(n_val, decimals)
-    elif lt(n, [0, 10000000000, 8, 8, 999998]):
-        pol = polarize(n)
-        return regular_format([0, pol['bottom']], precision3) + "H" + comma_format(pol['top'])
+    elif lt(n, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 8, 8, 3]):
         rep = array_search(n, 4)
         if rep >= 1:
