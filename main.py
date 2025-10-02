@@ -1111,6 +1111,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
     if eq(t,2) and eq(n,2): return [0, 4]
     if prec == False and r > arrow_precision and gte(n,2):
         arrow_amount = _arrow(t,arrow_precision,n, a_arg, True)
+        if eq(n,2): return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision):]
         return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
     s = tofloat(n)
     if s is None:
@@ -1399,7 +1400,7 @@ def suffix(num, small=False):
         return regular_format([0, val], precision4) + "J" + _suffix(pol['height'])
 
 # From https://github.com/cloudytheconqueror/letter-notation-format
-def format(num, small=False):
+def format(num, decimals=decimals, small=False):
     precision2 = max(5, decimals)
     precision3 = max(4, decimals)
     precision4 = max(6, decimals)
@@ -1458,3 +1459,4 @@ def format(num, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
