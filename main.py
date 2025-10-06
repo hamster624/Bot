@@ -301,15 +301,16 @@ async def setlogchannel(ctx, channel: discord.TextChannel):
 
 @bot.command()
 async def calc(ctx, *, expression: str):
-	global log_channel_id
-	log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
-	
-	if log_channel:
-	    await log_channel.send(
-	        f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
-	        f"in {'DMs' if not ctx.guild else f'#{ctx.channel} ({ctx.guild})'} "
-	        f"sent: {expression}"
-	    )
+    global log_channel_id
+    log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
+
+    if log_channel:
+        await log_channel.send(
+            f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
+            f"in {'DMs' if not ctx.guild else f'#{ctx.channel} ({ctx.guild})'} "
+            f"sent: {expression}"
+        )
+
     formats = {
         "format": format,
         "string": string,
@@ -413,14 +414,12 @@ async def calc_slash(
     expression: str,
     fmt: str = "format"
 ):
-	log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
-	
-	if log_channel:
-	    await log_channel.send(
-	        f"[/calc] {interaction.user} (ID: {interaction.user.id}) "
-	        f"in {'DMs' if not interaction.guild else f'#{interaction.channel} ({interaction.guild})'} "
-	        f"sent: {expression}"
-	    )
+    if log_channel:
+        await log_channel.send(
+            f"[/calc] {ctx.author} (ID: {ctx.author.id}) "
+            f"in {'DMs' if not ctx.guild else f'#{ctx.channel} ({ctx.guild})'} "
+            f"sent: {expression}"
+        )
 
     formats = {
         "format": format,
@@ -1497,6 +1496,7 @@ def format(num, decimals=decimals, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
