@@ -412,8 +412,8 @@ async def calc_slash(
 
     if log_channel:
         await log_channel.send(
-            f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
-            f"in {'DMs' if not ctx.guild else f'#{ctx.channel.name} ({ctx.guild.name})'} "
+            f"[!calc] {interaction.user} (ID: {interaction.user.id}) "
+            f"in {'DMs' if not interaction.guild else f'#{interaction.channel.name} ({interaction.guild.name})'} "
             f"sent: {expression}"
         )
     formats = {
@@ -1491,6 +1491,7 @@ def format(num, decimals=decimals, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
