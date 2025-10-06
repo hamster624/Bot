@@ -281,13 +281,6 @@ async def safe_eval_process(expr: str, safe_globals: dict, timeout: float = EVAL
         raise
     except Exception:
         raise
-def get_log_channel(guild: discord.Guild):
-    if not guild:
-        return None
-    channel_id = log_channels.get(guild.id)
-    if not channel_id:
-        return None
-    return guild.get_channel(channel_id)
 @bot.command()
 async def setlogchannel(ctx, channel: discord.TextChannel):
     """Sets the log channel for all calc logs (owner-only)."""
@@ -307,7 +300,7 @@ async def calc(ctx, *, expression: str):
     if log_channel:
         await log_channel.send(
             f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
-            f"in {'DMs' if not ctx.guild else f'#{ctx.channel} ({ctx.guild})'} "
+            f"in {'DMs' if not ctx.guild else f'#{ctx.channel.name} ({ctx.guild.name})'} "
             f"sent: {expression}"
         )
 
@@ -414,13 +407,15 @@ async def calc_slash(
     expression: str,
     fmt: str = "format"
 ):
+    global log_channel_id
+    log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
+
     if log_channel:
         await log_channel.send(
-            f"[/calc] {ctx.author} (ID: {ctx.author.id}) "
-            f"in {'DMs' if not ctx.guild else f'#{ctx.channel} ({ctx.guild})'} "
+            f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
+            f"in {'DMs' if not ctx.guild else f'#{ctx.channel.name} ({ctx.guild.name})'} "
             f"sent: {expression}"
         )
-
     formats = {
         "format": format,
         "string": string,
@@ -1496,6 +1491,7 @@ def format(num, decimals=decimals, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
 
