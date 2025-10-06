@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 import multiprocessing as mp
 import traceback
 OWNER_ID = 715212498109726771 # Yup thats my id
+log_channel_id = None
 log_channels = {}
 
 _executor = ThreadPoolExecutor(max_workers=4)
@@ -289,22 +290,26 @@ def get_log_channel(guild: discord.Guild):
     return guild.get_channel(channel_id)
 @bot.command()
 async def setlogchannel(ctx, channel: discord.TextChannel):
-    """Set the log channel for calc usage (owner-only)."""
+    """Sets the log channel for all calc logs (owner-only)."""
+    global log_channel_id
     if ctx.author.id != OWNER_ID:
         await ctx.send("🚫 Only the bot owner can set the log channel.")
         return
 
-    log_channels[ctx.guild.id] = channel.id
-    await ctx.send(f"✅ Log channel set to {channel.mention}")
+    log_channel_id = channel.id
+    await ctx.send(f"✅ Log channel set to {channel.mention} for all servers and DMs.")
 
 @bot.command()
 async def calc(ctx, *, expression: str):
-    log_channel = get_log_channel(ctx.guild)
-    if log_channel:
-        await log_channel.send(
-            f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
-            f"in #{ctx.channel} ({ctx.guild}) sent: {expression}"
-        )
+	global log_channel_id
+	log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
+	
+	if log_channel:
+	    await log_channel.send(
+	        f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
+	        f"in {'DMs' if not ctx.guild else f'#{ctx.channel} ({ctx.guild})'} "
+	        f"sent: {expression}"
+	    )
     formats = {
         "format": format,
         "string": string,
@@ -408,12 +413,15 @@ async def calc_slash(
     expression: str,
     fmt: str = "format"
 ):
-    log_channel = get_log_channel(interaction.guild)
-    if log_channel:
-        await log_channel.send(
-            f"[/calc] {interaction.user} (ID: {interaction.user.id}) "
-            f"in #{interaction.channel} ({interaction.guild}) sent: {expression}"
-        )
+	log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
+	
+	if log_channel:
+	    await log_channel.send(
+	        f"[/calc] {interaction.user} (ID: {interaction.user.id}) "
+	        f"in {'DMs' if not interaction.guild else f'#{interaction.channel} ({interaction.guild})'} "
+	        f"sent: {expression}"
+	    )
+
     formats = {
         "format": format,
         "string": string,
@@ -1489,5 +1497,6 @@ def format(num, decimals=decimals, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 bot.run(token)
+
 
 
