@@ -59,38 +59,6 @@ intents.guilds = True
 intents.messages = True
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
-STATE_FILE = "counting_state.json"
-state = {}
-
-# ---------------------
-# State Management
-# ---------------------
-def save_state():
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f)
-
-def load_state():
-    global state
-    try:
-        with open(STATE_FILE, "r") as f:
-            state = json.load(f)
-    except FileNotFoundError:
-        state = {}
-
-def get_guild_state(guild_id):
-    return state.get(str(guild_id), {
-        "counting_channel_id": None,
-        "current_count": 0,
-        "last_counter": None
-    })
-
-def set_guild_state(guild_id, counting_channel_id, current_count, last_counter):
-    state[str(guild_id)] = {
-        "counting_channel_id": counting_channel_id,
-        "current_count": current_count,
-        "last_counter": last_counter
-    }
-    save_state()
 
 # ---------------------
 # Bot Events
@@ -100,130 +68,6 @@ async def on_ready():
     load_state()
     await bot.tree.sync()
     print(f"✅ Logged in as {bot.user}")
-
-# ---------------------
-# Counting Commands
-# ---------------------
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setcount(ctx, number: int):
-    guild_id = ctx.guild.id
-    guild_state = get_guild_state(guild_id)
-    if guild_state["counting_channel_id"] is None:
-        await ctx.send("⚠ No counting channel set! Use `!setcounting #channel` first.")
-        return
-    set_guild_state(guild_id, guild_state["counting_channel_id"], number, guild_state["last_counter"])
-    await ctx.send(f"✅ Current count for {ctx.guild.name} has been set to **{number}**.")
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setcounting(ctx, channel: discord.TextChannel):
-    guild_id = ctx.guild.id
-    set_guild_state(guild_id, channel.id, 0, None)
-    await ctx.send(f"✅ Counting channel set to {channel.mention}. Counter reset to 0.")
-
-@bot.command()
-async def current(ctx):
-    guild_state = get_guild_state(ctx.guild.id)
-    await ctx.send(
-        f"🔹 Current count: **{guild_state['current_count']}**\n"
-        f"📢 Channel: <#{guild_state['counting_channel_id']}>"
-        if guild_state['counting_channel_id'] else "⚠ No counting channel set!"
-    )
-
-# ---------------------
-# Counting Logic
-# ---------------------
-@bot.event
-async def on_message(message):
-    if message.author.bot or not message.guild:
-        return
-
-    guild_id = message.guild.id
-    guild_state = get_guild_state(guild_id)
-    counting_channel_id = guild_state['counting_channel_id']
-    current_count = guild_state['current_count']
-    last_counter = guild_state['last_counter']
-
-    if counting_channel_id and message.channel.id == counting_channel_id:
-        content = message.content.strip()
-        if not content: return
-        content = content.replace("^", "**")
-        first_token = content.split()[0]
-
-        safe_globals = {
-            "__builtins__": {},
-            "math": math,
-            "tetration": tetration,
-            "tetr": tetration,
-            "pent": pent,
-            "hex": hex,
-            "hept": hept,
-            "arrow": arrow,
-            "fact": fact,
-            "factorial": factorial,
-            "gamma": gamma,
-            "slog": slog,
-            "plog": plog,
-            "hlog": hlog,
-            "hyper_log": hyper_log,
-            "addlayer": addlayer,
-            "add": add,
-            "sub": sub,
-            "mul": mul,
-            "div": div,
-            "pow": pow,
-            "power": power,
-            "exp": exp,
-            "lambertw": lambertw,
-            "root": root,
-            "sqrt": sqrt,
-            "eq": eq,
-            "lt": lt,
-            "gte": gte,
-            "gt": gt,
-            "lte": lte,
-            "min": min,
-            "max": max,
-            "floor": floor,
-            "ceil": ceil,
-            "log": log,
-            "ln": ln,
-            "logbase": logbase
-        }
-
-        try:
-            value = eval(first_token, safe_globals, {})
-            value = math.floor(float(value) + 0.5) if value >= 0 else math.ceil(float(value) - 0.5)
-        except Exception:
-            return
-
-        if message.author.id == last_counter:
-            await message.channel.send(
-                f"❌ {message.author.mention}, you counted twice in a row! Count resets to 1."
-            )
-            current_count = 0
-            last_counter = None
-            set_guild_state(guild_id, counting_channel_id, current_count, last_counter)
-            return
-
-        if value == current_count + 1:
-            current_count += 1
-            last_counter = message.author.id
-            await message.add_reaction("✅")
-        else:
-            await message.channel.send(
-                f"❌ {message.author.mention} failed!\n"
-                f"➡ The next number is now **1**.\n"
-                f"🔹 Last successful number was **{current_count}**."
-            )
-            current_count = 0
-            last_counter = None
-
-        set_guild_state(guild_id, counting_channel_id, current_count, last_counter)
-
-    await bot.process_commands(message)
-
 # ---------------------
 # Calculator Commands (!calc + /calc)
 # ---------------------
@@ -242,7 +86,7 @@ async def guide(ctx):
     help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10. Max 40 arrows.\n"
     help_message += "To use hyperlog the 1st number is the number you want to log and 2nd is arrows for example if log10(x) = 10^x and we solve for x then hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array. \n"
     help_message += "Usage: `/calc <expression> [format]`\n"
-    help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
+    help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10 format and make sure to put as strings (in " ") or use the array format."
     await ctx.send(help_message)
 def _eval_in_subprocess(expr: str, safe_globals: dict, q: mp.Queue):
     try:
@@ -391,7 +235,7 @@ async def guide_slash(interaction: discord.Interaction):
     help_message += "To use arrow the 1st number is base 2nd is arrows 3rd is height so arrow(10,4,10)=10^^^^10. Max 40 arrows.\n"
     help_message += "To use hyperlog the 1st number is the number you want to log and 2nd is arrows for example if log10(x) = 10^x and we solve for x then hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array. \n"
     help_message += "Usage: `/calc <expression> [format]`\n"
-    help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10=(10^)^9 10 and make sure to put them as strings."
+    help_message += "Number Usage: for numbers below 2^1024 you can use float, but after they go higher use the 'correct' formats output so 1F10 format and make sure to put as strings (in " ") or use the array format."
     await interaction.response.send_message(help_message)
 
 # ---------------------
@@ -1435,4 +1279,5 @@ def convert(x):
         return arrow(10,float(after)+1,float(before), prec=False)
     return correct(start_array)
 bot.run(token)
+
 
