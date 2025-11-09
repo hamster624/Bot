@@ -490,11 +490,8 @@ async def calc_slash(
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
 import math
-# if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
-#import sys
-#sys.setrecursionlimit(100000)
 #--Edtiable things--
-decimals = 6 # How many decimals (duh). Max 16
+decimals = 16 # How many decimals (duh). Max 16
 precise_arrow = False # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
 arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
 max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
@@ -519,195 +516,6 @@ MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
 _log10 = math.log10
 # You can ignore these, these are only to help the code.
-def correct(x):
-    if isinstance(x, (int, float)): 
-        return correct([0 if x >= 0 else 1, abs(x)])
-
-    if isinstance(x, str):
-        s = x.strip()
-        if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
-        return fromString(s)
-
-    if isinstance(x, list):
-        arr = x[:]
-        if not arr: return [0, 0]
-        if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
-        if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
-
-        for i in range(1, len(arr)):
-            if isinstance(arr[i], str):
-                try: arr[i] = float(arr[i])
-                except ValueError: raise ValueError(f"Element at index {i} must be a number (array:{arr})")
-            elif not isinstance(arr[i], (int, float)): raise ValueError(f"Element at index {i} must be a number (array:{arr})")
-            if arr[i] < 0: raise ValueError(f"Element at index {i} must be positive (array:{arr})")
-
-        changed = True
-        while changed:
-            changed = False
-            for i in range(len(arr)-1, 0, -1):
-                if arr[i] > MAX_SAFE_INT:
-                    L = _log10(arr[i])
-                    if i == 1:
-                        arr[1] = L
-                        if len(arr) > 2: arr[2] += 1
-                        else: arr.append(1)
-                    else:
-                        arr[1] = L
-                        for j in range(2, i):
-                            arr[j] = 1
-                        if i == 2: arr[2] = 1
-                        else: arr[i] = 0
-                        if i == len(arr) - 1: arr.append(1)
-                        else: arr[i+1] += 1
-                    changed = True
-                    break
-
-        for i in range(1, len(arr)):
-            if isinstance(arr[i], float) and arr[i] <= MAX_SAFE_INT and arr[i].is_integer():
-                arr[i] = int(arr[i])
-
-        while len(arr) >= 3 and arr[2] >= 1 and arr[1] <= _log10(MAX_SAFE_INT):
-            collapsed_val = 10 ** arr[1]
-            if arr[2] == 1:
-                if len(arr) == 3: arr = [arr[0], collapsed_val]
-                else: arr = [arr[0], collapsed_val, 0] + arr[3:]
-            else: arr = [arr[0], collapsed_val, arr[2]-1] + arr[3:]
-
-        if len(arr) > 3 and arr[2] == 0:
-            z = 0
-            i = 2
-            while i < len(arr) and arr[i] == 0:
-                z += 1
-                i += 1
-            if i == len(arr): arr.append(1)
-            if arr[i] == 0: arr[i] = 0
-            else: arr[i] -= 1
-            num_eights = 1 if z == 1 or z == 2 else (z - 1)
-            a1 = arr[1]
-            if isinstance(a1, float) and a1.is_integer(): a1 = a1
-            mid = [8] * num_eights + [a1 - 2]
-            arr = arr[:2] + mid + arr[i:]
-
-        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
-
-        return arr
-    raise TypeError("Unsupported type for correct")
-def fromString(s):
-    s = s.strip()
-    sign = 0
-    if s.startswith("-"):
-        sign = 1
-        s = s[1:].lstrip()
-
-    n = len(s)
-    i = 0
-    ops = []
-    base = None
-
-    def read_int(start):
-        j = start
-        while j < n and s[j].isdigit():
-            j += 1
-        if j == start:
-            return None, start
-        return int(s[start:j]), j
-
-    def read_float(start):
-        j = start
-        dot = False
-        while j < n and (s[j].isdigit() or (s[j] == '.' and not dot)):
-            dot = dot or (s[j] == '.')
-            j += 1
-        if j == start:
-            return None, start
-        return float(s[start:j]), j
-
-    while i < n:
-        if s[i].isspace():
-            i += 1
-            continue
-
-        if s.startswith("(10{", i):
-            j = i + 4
-            D, j2 = read_int(j)
-            if D is not None and j2 < n and s[j2] == "}":
-                j2 += 1
-                if j2 < n and s[j2] == ")":
-                    j2 += 1
-                if j2 < n and s[j2] == "^":
-                    j2 += 1
-                    M, j3 = read_int(j2)
-                    if M is None:
-                        M, j3 = read_float(j2)
-                    if M is not None:
-                        ops.append(M)
-                        i = j3
-                        continue
-
-        if s.startswith("(10", i):
-            j = i + 3
-            carets = 0
-            while j < n and s[j] == "^":
-                carets += 1
-                j += 1
-            if carets >= 1:
-                if j < n and s[j] == ")":
-                    j += 1
-                if j < n and s[j] == "^":
-                    j += 1
-                    M, j2 = read_int(j)
-                    if M is None:
-                        M, j2 = read_float(j)
-                    if M is not None:
-                        ops.append(M)
-                        i = j2
-                        continue
-
-        if s.startswith("10{", i):
-            j = i + 3
-            D, j2 = read_int(j)
-            if D is not None and j2 < n and s[j2] == "}":
-                ops.append(1)
-                i = j2 + 1
-                continue
-
-        if s.startswith("10", i):
-            j = i + 2
-            carets = 0
-            while j < n and s[j] == "^":
-                carets += 1
-                j += 1
-            if carets >= 2:
-                ops.append(1)
-                i = j
-                continue
-
-        if s[i] == "e":
-            j = i
-            layer = 0
-            while j < n and s[j] == "e":
-                layer += 1
-                j += 1
-            num, j2 = read_int(j)
-            if num is None: num, j2 = read_float(j)
-            if num is not None:
-                base = ('e', layer, num)
-                i = j2
-                continue
-        num, j = read_int(i)
-        if num is None: num, j = read_float(i)
-        if num is not None:
-            if base is None:
-                base = ('num', num)
-            i = j
-            continue
-        i += 1
-    if base is None: raise ValueError("fromString: no base (e.. or number) found")
-    if base[0] == 'e': arr = [sign, base[2], base[1]]
-    else: arr = [sign, base[1]]
-    for m in reversed(ops): arr.append(m)
-    return correct(arr)
-
 def from_hyper_e(s):
     if not (s.startswith("E") or s.startswith("-E")):
         raise ValueError("Not a hyper_e string")
@@ -740,6 +548,102 @@ def from_hyper_e(s):
 
         nums.append(val)
     return correct([sign] + nums)
+def correct(x):
+    if isinstance(x, (int, float)): 
+        return correct([0 if x >= 0 else 1, abs(x)])
+
+    if isinstance(x, str):
+        s = x.strip()
+        if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
+        return convert(s)
+
+    if isinstance(x, list):
+        arr = x[:]
+        if not arr: return [0, 0]
+        if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
+        if arr[0] not in (0, 1):
+            raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
+
+        for i in range(1, len(arr)):
+            if isinstance(arr[i], str):
+                try:
+                    arr[i] = float(arr[i])
+                except ValueError:
+                    raise ValueError(f"Element at index {i} must be a number (array:{arr})")
+            elif not isinstance(arr[i], (int, float)):
+                raise ValueError(f"Element at index {i} must be a number (array:{arr})")
+            if arr[i] < 0:
+                raise ValueError(f"Element at index {i} must be positive (array:{arr})")
+
+        changed = True
+        while changed:
+            changed = False
+            for i in range(len(arr)-1, 0, -1):
+                if arr[i] > MAX_SAFE_INT:
+                    L = _log10(arr[i])
+                    if i == 1:
+                        arr[1] = L
+                        if len(arr) > 2:
+                            arr[2] += 1
+                        else:
+                            arr.append(1)
+                    else:
+                        arr[1] = L
+                        for j in range(2, i):
+                            arr[j] = 1
+                        if i == 2:
+                            arr[2] = 1
+                        else:
+                            arr[i] = 0
+                        if i == len(arr)-1:
+                            arr.append(1)
+                        else:
+                            arr[i+1] += 1
+                    changed = True
+                    break
+
+        for i in range(1, len(arr)):
+            if isinstance(arr[i], float) and arr[i].is_integer():
+                arr[i] = int(arr[i])
+
+
+        if len(arr) > 3 and arr[2] == 0:
+            z = 0
+            i = 2
+            while i < len(arr) and arr[i] == 0:
+                z += 1
+                i += 1
+
+            a1 = arr[1]
+            if isinstance(a1, float) and a1.is_integer():
+                a1 = int(a1)
+
+            if z == 1:
+                mid = [9]
+                if i < len(arr):
+                    arr[i] -= 1
+                    if arr[i] == 0 and i == len(arr)-1:
+                        arr.pop()
+                else:
+                    arr.append(1)
+            else:
+                mid = [8] * z
+
+            arr = arr[:2] + mid + arr[i:]
+        while len(arr) > 2 and arr[-1] == 0:
+            arr.pop()
+        while len(arr) >= 3 and arr[2] >= 1 and arr[1] <= _log10(MAX_SAFE_INT):
+            collapsed_val = 10 ** arr[1]
+            if arr[2] == 1:
+                if len(arr) == 3:
+                    arr = [arr[0], collapsed_val]
+                else:
+                    arr = [arr[0], collapsed_val, 0] + arr[3:]
+            else:
+                arr = [arr[0], collapsed_val, arr[2] - 1] + arr[3:]
+        return arr
+
+    raise TypeError("Unsupported type for correct")
 
 def compare(a, b):
     A = correct(a)
@@ -832,7 +736,7 @@ def polarize(array, smallTop=False, skip=False):
                         top = pairs[elem][1] + 1
                     else: top = 1
                 else: top = 1
-    return {"bottom": bottom, "top": top, "height": len(array)-1}
+    return {"bottom": bottom, "top": top, "height": height}
 
 def array_search(arr, height):
     pairs = _to_pair_array(arr)
@@ -890,10 +794,14 @@ def minimum(a, b):
     if lte(a,b): return correct(a)
     else: return correct(b)
 # Operations
-def tofloat(x):
-    a = correct(x)
-    if len(a) == 2: return (-a[1] if a[0] == 1 else a[1])
-    return None
+def tofloat(a):
+    a = correct(a)
+    val = a[1]
+    try:
+        if len(a) == 3:
+            val = 10**val
+    except: power(10,val)
+    return -val if a[0] == 1 else val
 
 def _lambertw_float(r, tol=1e-12, max_iter=100):
     if not math.isfinite(r):
@@ -929,7 +837,6 @@ def log(x):
     if len(arr) > 3: return correct(arr)
     return correct(arr)
 
-
 def slog(x): return hyper_log(x, 2)
 def plog(x): return hyper_log(x, 3)
 def hlog(x): return hyper_log(x, 4)
@@ -952,54 +859,34 @@ def addlayer(x):
     if len(arr) == 3: return correct([0, arr[1], arr[2] + 1])
     if len(arr) > 3: return arr
     return arr
-
+def abs_val(x): 
+    x=correct(x)
+    return correct([0] + x[1:])
 def add(a, b):
-    A = correct(a)
-    B = correct(b)
-    if (len(A) == 3 and A[2] > 1) or (len(B) == 3 and B[2] > 1): return maximum(A, B)
-    if len(A) == 4 or len(B) == 4: return maximum(A, B)
-    if len(A) == 2 and len(B) == 2:
-        sign_a = -1 if A[0] == 1 else 1
-        sign_b = -1 if B[0] == 1 else 1
-        result_val = sign_a * A[1] + sign_b * B[1]
-        result_sign = 0 if result_val >= 0 else 1
-        return correct([result_sign, abs(result_val)])
-    if len(A) >= 3 and len(B) >= 3:
-        if A[0] != B[0]: return maximum(a, b)
-        if A[1] > B[1]:
-            diff = B[1] - A[1]
-            if diff < -15: log_val = A[1]
-            else: log_val = A[1] + _log10(1 + 10**diff)
-        else:
-            diff = A[1] - B[1]
-            if diff < -15: log_val = B[1]
-            else: log_val = B[1] + _log10(1 + 10**diff)
-        return correct([A[0], log_val] + ([1] if len(A) > 2 else []))
-    if (len(A) >= 3 and len(B) == 2) or (len(B) >= 3 and len(A) == 2):
-        if len(B) >= 3:
-            A, B = B, A
-        if A[0] != B[0]: return maximum(A, B)
-        try:
-            LA = log(A)
-            LB = log(B)
-            fa = tofloat(LA)
-            fb = tofloat(LB)
-        except Exception:
-            return maximum(A, B)
-        if fa is not None and fb is not None:
-            if fa > fb:
-                diff = fb - fa
-                if diff < -15: log_val = fa
-                else: log_val = fa + _log10(1 + 10**diff)
-            else:
-                diff = fa - fb
-                if diff < -15: log_val = fb
-                else: log_val = fb + _log10(1 + 10**diff)
-            return correct([A[0], log_val] + ([1] if len(A) > 2 else []))
-        return maximum(A, B)
-    return maximum(A, B)
+    a, b = correct(a), correct(b)
+    if gt(a, [0, 15.954589770191003, 2]) or gt(b, [0, 15.954589770191003, 2]): return maximum(a,b)
+    if a[0] == 1 and b[0] == 1: return neg(add(neg(a),neg(b)))
+    if a[0] == 1 and b[0] == 0: return subtract(b, neg(a))
+    if a[0] == 0 and b[0] == 1: return subtract(a, neg(b))
+    if len(a) == 3 or len(b) == 3:
+        if (len(a) > 2 and a[2] > 1) or (len(b) > 2 and b[2] > 1): return maximum(a, b)
+    if len(a) == 2 and len(b) == 2: return correct([0, tofloat(a) + tofloat(b)])
+    return addlayer(tofloat(log(a)) + tofloat(log(1 + tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))
 
-def subtract(a, b): return add(a, neg(b))
+def subtract(a,b):
+    a, b = correct(a), correct(b)
+    if eq(a,b) and a[0] == b[0]: return [0,0]
+    if eq(a,b): return neg(add(abs_val(a),abs_val(b)))
+    if gt(a, [0, 15.954589770191003, 2]) or gt(b, [0, 15.954589770191003, 2]):
+        if gt(b,a): return neg(b)
+        if gt(a,b): return neg(b)
+    if a[0] == 1 and b[0] == 1: 
+        return neg(subtract(abs_val(b), abs_val(a)))
+    if a[0] == 1 and b[0] == 0: return neg(addlayer(tofloat(log(abs_val(a))) + tofloat(log(1 + tofloat(addlayer(tofloat(log(b)) - tofloat(log(abs_val(a)))))))))
+    if a[0] == 0 and b[0] == 1: return add(a, abs_val(b))
+    if lt(a,b):
+        if a[0] == 0 and b[0] == 0: return neg(addlayer(tofloat(log(a)) + tofloat(log(abs_val(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))))
+    if a[0] == 0 and b[0] == 0: return addlayer(tofloat(log(a)) + tofloat(log(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))
 
 def multiply(a, b):
     A = correct(a)
@@ -1238,8 +1125,11 @@ def nonation(a,b): return arrow(a,7,b)
 def decation(a,b): return arrow(a,8,b)
 def logbase(a,b): return divide(log(a),log(b))
 def ln(a): return divide(log(a),0.4342944819032518) # log10(a)/log10(e)
-def sqrt(a): return power(a, 0.5)
-def root(a,b): return power(a, divide(1,b))
+def sqrt(a): return root(a,2)
+def root(a,b): 
+    if lt(b,0): raise ValueError("Can't root a negative")
+    if gt(b,0) and lt(b,1): return power(a,divide(1,b))
+    return addlayer(divide(log(a),b))
 def exp(x): return power(2.718281828459045, x)
 # Short names
 def hept(a,b): return heptation(a,b)
@@ -1490,11 +1380,60 @@ def format(num, decimals=decimals, small=False):
         pol = polarize(n, True)
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
+def count_repeating(s):
+    for i, ch in enumerate(s):
+        if ch != s[0]:
+            return i
+    return len(s)    
+
+def convert(x):
+    start_array = [0, 0, 0, 0, 0, 0]
+    x = x.replace(",", "")
+    if x.startswith("-"): 
+        start_array[0] = 1
+        x = x.strip("-")
+
+    if x.startswith("H"): 
+        start_array[5] = count_repeating(x)
+        x = x.strip("H")
+   
+    if x.startswith("G"): 
+        start_array[4] = count_repeating(x)
+        x = x.strip("G")
+
+    if x.startswith("F"): 
+        start_array[3] = count_repeating(x)
+        x = x.strip("F")
+
+    if x.startswith("e"): 
+        start_array[2] = x.count("e")
+        x = x.strip("e")
+
+    if 'e' in x:
+        before, after = x.split("e")
+        start_array[1] = math.log10(float(before)) + float(after)
+
+    if 'F' in x:
+        before, after = x.split("F")
+        start_array[2] = int(math.log10(float(before)) + float(after))
+        start_array[1] = 10 ** (math.log10(float(before)) + float(after) - start_array[2])
+    # This will definitely slow it down, but i cannot find a different way to do this
+    if 'G' in x:
+        before, after = x.split("G")
+        pentated = arrow(10, 3, float(after) + math.log10(float(before)))
+        start_array[3] =+ pentated[3]
+        start_array[2] =+ pentated[2]
+        start_array[1] =+ pentated[1]
+    # same here
+    if 'H' in x:
+        before, after = x.split("H")
+        hexated = arrow(10, 4, float(after) + math.log10(float(before)))
+        start_array[4] =+ hexated[4]
+        start_array[3] =+ hexated[3]
+        start_array[2] =+ hexated[2]
+        start_array[1] =+ hexated[1]
+    if 'J' in x:
+        before, after = x.split("J")
+        return arrow(10,float(after)+1,float(before), prec=False)
+    return correct(start_array)
 bot.run(token)
-
-
-
-
-
-
-
