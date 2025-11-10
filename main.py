@@ -393,117 +393,106 @@ def from_hyper_e(s):
         nums.append(val)
     return correct([sign] + nums)
 def correct(x):
-    if isinstance(x, (int, float)): 
-        return correct([0 if x >= 0 else 1, abs(x)])
-
+    if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
     if isinstance(x, str):
         s = x.strip()
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
         return convert(s)
 
     if isinstance(x, list):
-        arr = x[:]
-        if not arr: return [0, 0]
-        if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
-        if arr[0] not in (0, 1):
-            raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
+        arr = list(x)
+        n = len(arr)
+        if n == 0: return [0, 0]
+        if n == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
 
-        for i in range(1, len(arr)):
+        if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
+        for i in range(1, n):
             if isinstance(arr[i], str):
                 try:
                     arr[i] = float(arr[i])
                 except ValueError:
                     raise ValueError(f"Element at index {i} must be a number (array:{arr})")
-            elif not isinstance(arr[i], (int, float)):
-                raise ValueError(f"Element at index {i} must be a number (array:{arr})")
-            if arr[i] < 0:
-                raise ValueError(f"Element at index {i} must be positive (array:{arr})")
+            elif not isinstance(arr[i], (int, float)): raise ValueError(f"Element at index {i} must be a number (array:{arr})")
+            if arr[i] < 0: raise ValueError(f"Element at index {i} must be positive (array:{arr})")
 
         changed = True
         while changed:
             changed = False
-            for i in range(len(arr)-1, 0, -1):
+            for i in range(n-1, 0, -1):
                 if arr[i] > MAX_SAFE_INT:
                     L = _log10(arr[i])
                     if i == 1:
                         arr[1] = L
-                        if len(arr) > 2:
-                            arr[2] += 1
+                        if n > 2: arr[2] += 1
                         else:
                             arr.append(1)
+                            n += 1
                     else:
                         arr[1] = L
-                        for j in range(2, i):
-                            arr[j] = 1
-                        if i == 2:
-                            arr[2] = 1
-                        else:
-                            arr[i] = 0
-                        if i == len(arr)-1:
+                        for j in range(2, i): arr[j] = 1
+                        if i == 2: arr[2] = 1
+                        else: arr[i] = 0
+                        if i == n-1:
                             arr.append(1)
-                        else:
-                            arr[i+1] += 1
+                            n += 1
+                        else: arr[i+1] += 1
                     changed = True
                     break
+        for i in range(1, n):
+            if isinstance(arr[i], float) and arr[i].is_integer(): arr[i] = int(arr[i])
 
-        for i in range(1, len(arr)):
-            if isinstance(arr[i], float) and arr[i].is_integer():
-                arr[i] = int(arr[i])
-
-
-        if len(arr) > 3 and arr[2] == 0:
-            z = 0
+        if n > 3 and arr[2] == 0:
             i = 2
-            while i < len(arr) and arr[i] == 0:
+            z = 0
+            while i < n and arr[i] == 0:
                 z += 1
                 i += 1
 
             a1 = arr[1]
-            if isinstance(a1, float) and a1.is_integer():
-                a1 = int(a1)
+            if isinstance(a1, float) and a1.is_integer(): a1 = int(a1)
 
             if z == 1:
                 mid = [9]
-                if i < len(arr):
+                if i < n:
                     arr[i] -= 1
-                    if arr[i] == 0 and i == len(arr)-1:
+                    if arr[i] == 0 and i == n-1:
                         arr.pop()
+                        n -= 1
                 else:
                     arr.append(1)
-            else:
-                mid = [8] * z
-
+                    n += 1
+            else: mid = [8] * z
             arr = arr[:2] + mid + arr[i:]
-        while len(arr) > 2 and arr[-1] == 0:
+            n = len(arr)
+
+        while n > 2 and arr[-1] == 0:
             arr.pop()
-        while len(arr) >= 3 and arr[2] >= 1 and arr[1] <= _log10(MAX_SAFE_INT):
+            n -= 1
+
+        while n >= 3 and arr[2] >= 1 and arr[1] <= _log10(MAX_SAFE_INT):
             collapsed_val = 10 ** arr[1]
             if arr[2] == 1:
-                if len(arr) == 3:
-                    arr = [arr[0], collapsed_val]
-                else:
-                    arr = [arr[0], collapsed_val, 0] + arr[3:]
-            else:
-                arr = [arr[0], collapsed_val, arr[2] - 1] + arr[3:]
+                if n == 3: arr = [arr[0], collapsed_val]
+                else: arr = [arr[0], collapsed_val, 0] + arr[3:]
+            else: arr = [arr[0], collapsed_val, arr[2] - 1] + arr[3:]
+            n = len(arr)
         return arr
-
     raise TypeError("Unsupported type for correct")
 
 def compare(a, b):
     A = correct(a)
     B = correct(b)
-    if A[0] != B[0]: return -1 if A[0] == 1 else 1
     sign = -1 if A[0] == 1 else 1
-    A_layer = len(A) - 2 if len(A) > 2 else 0
-    B_layer = len(B) - 2 if len(B) > 2 else 0
+    if A[0] != B[0]: return -sign
+    lenA = len(A)
+    lenB = len(B)
+    A_layer = lenA - 2 if lenA > 2 else 0
+    B_layer = lenB - 2 if lenB > 2 else 0
     if A_layer != B_layer: return sign * (1 if A_layer > B_layer else -1)
-    min_len = min(len(A), len(B))
-    for i in range(1, min_len + 1):
-        Ai = A[-i]
-        Bi = B[-i]
-        if Ai != Bi:
-            return sign * (1 if Ai > Bi else -1)
-    if len(A) != len(B): return sign * (1 if len(A) > len(B) else -1)
+    min_len = min(lenA, lenB)
+    for Ai, Bi in zip(reversed(A[-min_len:]), reversed(B[-min_len:])):
+        if Ai != Bi: return sign * (1 if Ai > Bi else -1)
+    if lenA != lenB: return sign * (1 if lenA > lenB else -1)
     return 0
 
 def neg(x):
@@ -1103,6 +1092,7 @@ def suffix(num, small=False):
     elif lt(n, 1000): return regular_format(n, decimals)
     elif lt(n, 1e9): return _suffix(n)
     elif lt(n, [0, max_suffix, 1]): return _suffix(n)
+       
     elif lt(n, [0, max_suffix, 2]):
         bottom = array_search(n, 0)
         rep = array_search(n, 1) - 1
@@ -1112,7 +1102,7 @@ def suffix(num, small=False):
         m = 10 ** (bottom - math.floor(bottom))
         e = math.floor(bottom)
         p = precision2
-        return regular_format([0, m], p) + "e" + _suffix([0, e, 1])
+        return regular_format([0, m], p) + "e" + _suffix(e)
     elif lt(n, [0, max_suffix, 3]):
         bottom = array_search(n, 0)
         rep = array_search(n, 1) - 1
@@ -1122,7 +1112,7 @@ def suffix(num, small=False):
         m = 10 ** (bottom - math.floor(bottom))
         e = math.floor(bottom)
         p = precision2
-        return "e" + regular_format([0, m], p) + "e" + _suffix([0, e], 0)
+        return "e" + regular_format([0, m], p) + "e" + _suffix(e)
     elif lt(n, [0, 10000000000, 3]):
         bottom = array_search(n, 0)
         rep = array_search(n, 1) - 1
@@ -1132,7 +1122,7 @@ def suffix(num, small=False):
         m = 10 ** (bottom - math.floor(bottom))
         e = math.floor(bottom)
         p = precision2
-        return "ee" + regular_format([0, m], p) + "e" + _suffix([0, e], 0)
+        return "ee" + regular_format([0, m], p) + "e" + _suffix(e)
     pol = polarize(n)
     if lt(n, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + _suffix(pol['top'], 0)
     elif lt(n, [0, 10000000000, 8, 3]):
@@ -1285,6 +1275,7 @@ def convert(x):
         return arrow(10,float(after)+1,float(before), prec=False)
     return correct(start_array)
 bot.run(token)
+
 
 
 
