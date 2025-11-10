@@ -695,6 +695,7 @@ def hyper_log(x, k):
     if len(arr) < (k + 1): return correct(_log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
     if len(arr) == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
     if len(arr) == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
+    else: return x
 def addlayer(x):
     arr = correct(x)
     if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-arr[1])])
@@ -1250,13 +1251,13 @@ def convert(x):
     if x.startswith("e"): 
         start_array[2] = x.count("e")
         x = x.strip("e")
-
     if 'e' in x:
         before, after = x.split("e")
+        start_array[2] += 1
         start_array[1] = math.log10(float(before)) + float(after)
-
     if 'F' in x:
         before, after = x.split("F")
+        start_array[3] += 1
         start_array[2] = int(math.log10(float(before)) + float(after))
         start_array[1] = 10 ** (math.log10(float(before)) + float(after) - start_array[2])
     # This will definitely slow it down, but i cannot find a different way to do this
@@ -1279,6 +1280,7 @@ def convert(x):
         return arrow(10,float(after)+1,float(before), prec=False)
     return correct(start_array)
 bot.run(token)
+
 
 
 
