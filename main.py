@@ -1008,7 +1008,12 @@ def hyper_e(x):
     arr = correct(x)
     sign = "-" if arr[0] == 1 else ""
     if len(arr) > 3:
-        after = [v + 1 for v in arr[3:]]
+        n = len(arr)
+        after = []
+        for i in range(3, n):
+            v = arr[i]
+            if v == 1 and i != n - 1: after.append(v)
+            else: after.append(v + 1)
         arr = arr[:3] + after
     return sign + "E" + "#".join(map(str, arr[1:]))
 # Literally a straight copy from the roblox OmegaNum.lua
@@ -1280,6 +1285,7 @@ def convert(x):
         return arrow(10,float(after)+1,float(before), prec=False)
     return correct(start_array)
 bot.run(token)
+
 
 
 
