@@ -334,6 +334,9 @@ async def calc_slash(
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
 import math
+# if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
+#import sys
+#sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
 precise_arrow = False # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
@@ -360,146 +363,109 @@ MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
 _log10 = math.log10
 # You can ignore these, these are only to help the code.
-def from_hyper_e(s):
-    if not (s.startswith("E") or s.startswith("-E")):
-        raise ValueError("Not a hyper_e string")
-    sign = 0
-    if s.startswith("-E"):
-        sign = 1
-        payload = s[2:]
-    else: payload = s[1:]
-    if payload == "":
-        raise ValueError("Invalid/empty hyper_e payload")
-
-    parts = payload.split("#")
-    nums = []
-    for i, p in enumerate(parts):
-        if "." in p:
-            val = float(p)
-            if val.is_integer(): val = int(val)
-        else:
-            try:
-                val = int(p)
-            except ValueError:
-                val = float(p)
-                if val.is_integer(): val = int(val)
-
-        if i >= 2:
-            if isinstance(val, int): val = val - 1
-            else:
-                val = val - 1
-                if val.is_integer(): val = int(val) # this is to remove the .0 from floats
-
-        nums.append(val)
-    return correct([sign] + nums)
 def correct(x):
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
+
     if isinstance(x, str):
         s = x.strip()
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
         return convert(s)
 
     if isinstance(x, list):
-        arr = list(x)
-        n = len(arr)
-        if n == 0: return [0, 0]
-        if n == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
-
+        arr = x[:]
+        if not arr: return [0, 0]
+        if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
         if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
-        for i in range(1, n):
+
+        for i in range(1, len(arr)):
             if isinstance(arr[i], str):
-                try:
-                    arr[i] = float(arr[i])
-                except ValueError:
-                    raise ValueError(f"Element at index {i} must be a number (array:{arr})")
+                try: arr[i] = float(arr[i])
+                except ValueError: raise ValueError(f"Element at index {i} must be a number (array:{arr})")
             elif not isinstance(arr[i], (int, float)): raise ValueError(f"Element at index {i} must be a number (array:{arr})")
             if arr[i] < 0: raise ValueError(f"Element at index {i} must be positive (array:{arr})")
 
         changed = True
         while changed:
             changed = False
-            for i in range(n-1, 0, -1):
+            for i in range(len(arr)-1, 0, -1):
                 if arr[i] > MAX_SAFE_INT:
                     L = _log10(arr[i])
                     if i == 1:
                         arr[1] = L
-                        if n > 2: arr[2] += 1
-                        else:
-                            arr.append(1)
-                            n += 1
+                        if len(arr) > 2: arr[2] += 1
+                        else: arr.append(1)
                     else:
                         arr[1] = L
-                        for j in range(2, i): arr[j] = 1
+                        for j in range(2, i):
+                            arr[j] = 1
                         if i == 2: arr[2] = 1
                         else: arr[i] = 0
-                        if i == n-1:
-                            arr.append(1)
-                            n += 1
+                        if i == len(arr) - 1: arr.append(1)
                         else: arr[i+1] += 1
                     changed = True
                     break
-        for i in range(1, n):
-            if isinstance(arr[i], float) and arr[i].is_integer(): arr[i] = int(arr[i])
 
-        if n > 3 and arr[2] == 0:
-            i = 2
-            z = 0
-            while i < n and arr[i] == 0:
-                z += 1
-                i += 1
+        for i in range(1, len(arr)):
+            if isinstance(arr[i], float) and arr[i] <= MAX_SAFE_INT and arr[i].is_integer():
+                arr[i] = int(arr[i])
 
-            a1 = arr[1]
-            if isinstance(a1, float) and a1.is_integer(): a1 = int(a1)
-
-            if z == 1:
-                mid = [9]
-                if i < n:
-                    arr[i] -= 1
-                    if arr[i] == 0 and i == n-1:
-                        arr.pop()
-                        n -= 1
-                else:
-                    arr.append(1)
-                    n += 1
-            else: mid = [8] * z
-            arr = arr[:2] + mid + arr[i:]
-            n = len(arr)
-
-        while n > 2 and arr[-1] == 0:
-            arr.pop()
-            n -= 1
-
-        while n >= 3 and arr[2] >= 1 and arr[1] <= _log10(MAX_SAFE_INT):
+        while len(arr) >= 3 and arr[2] >= 1 and arr[1] <= _log10(MAX_SAFE_INT):
             collapsed_val = 10 ** arr[1]
             if arr[2] == 1:
-                if n == 3: arr = [arr[0], collapsed_val]
+                if len(arr) == 3: arr = [arr[0], collapsed_val]
                 else: arr = [arr[0], collapsed_val, 0] + arr[3:]
-            else: arr = [arr[0], collapsed_val, arr[2] - 1] + arr[3:]
-            n = len(arr)
+            else: arr = [arr[0], collapsed_val, arr[2]-1] + arr[3:]
+
+        if len(arr) > 3 and arr[2] == 0:
+            z = 0
+            i = 2
+            while i < len(arr) and arr[i] == 0:
+                z += 1
+                i += 1
+            if i == len(arr): arr.append(1)
+            if arr[i] == 0: arr[i] = 0
+            else: arr[i] -= 1
+            a1 = arr[1]
+            if isinstance(a1, float) and a1.is_integer(): a1 = a1
+            a2 = [a1 - 2] if a1 == 1 else [a1 - 1]
+            arr = correct(arr[:2] + a2 + arr[i:])
+
+        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
+
         return arr
     raise TypeError("Unsupported type for correct")
+
+def from_hyper_e(x):
+    if not x.lstrip('-').startswith('E'): raise ValueError("Not a hyper_e string")
+    sign = int(x.startswith('-'))
+    nums = [int(n) for n in x.lstrip('-E').replace('#', ',').split(',')]
+    if len(nums) > 3: nums[2:] = [v - 1 for v in nums[2:]]
+    return correct([sign] + nums)
 
 def compare(a, b):
     A = correct(a)
     B = correct(b)
+    if A[0] != B[0]: return -1 if A[0] == 1 else 1
     sign = -1 if A[0] == 1 else 1
-    if A[0] != B[0]: return -sign
     lenA = len(A)
     lenB = len(B)
     A_layer = lenA - 2 if lenA > 2 else 0
     B_layer = lenB - 2 if lenB > 2 else 0
     if A_layer != B_layer: return sign * (1 if A_layer > B_layer else -1)
     min_len = min(lenA, lenB)
-    for Ai, Bi in zip(reversed(A[-min_len:]), reversed(B[-min_len:])):
-        if Ai != Bi: return sign * (1 if Ai > Bi else -1)
+    for i in range(1, min_len + 1):
+        Ai = A[-i]
+        Bi = B[-i]
+        if Ai != Bi:
+            return sign * (1 if Ai > Bi else -1)
     if lenA != lenB: return sign * (1 if lenA > lenB else -1)
     return 0
 
 def neg(x):
-    arr = correct(x)
-    flipped = arr[:]
-    flipped[0] = 1 - arr[0]
-    return flipped
+    correct(x)
+    x[0] = int(not x[0])
+    return x
+
 # Everything after this is from https://github.com/cloudytheconqueror/letter-notation-format
 def _to_pair_array(arr):
     if not arr: return [[0, 0]]
@@ -684,7 +650,6 @@ def hyper_log(x, k):
     if len(arr) < (k + 1): return correct(_log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
     if len(arr) == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
     if len(arr) == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
-    else: return x
 def addlayer(x):
     arr = correct(x)
     if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-arr[1])])
@@ -720,6 +685,7 @@ def subtract(a,b):
     if lt(a,b):
         if a[0] == 0 and b[0] == 0: return neg(addlayer(tofloat(log(a)) + tofloat(log(abs_val(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))))
     if a[0] == 0 and b[0] == 0: return addlayer(tofloat(log(a)) + tofloat(log(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))
+
 def multiply(a, b):
     A = correct(a)
     B = correct(b)
@@ -992,19 +958,19 @@ def string(arr, top=True):
         if n < 2: inner = f"{arrow_str}{inner}"
         else: inner = f"({arrow_str})^{n} {inner}"
     return sign + inner
-
 def hyper_e(x):
     arr = correct(x)
     sign = "-" if arr[0] == 1 else ""
     if len(arr) > 3:
-        n = len(arr)
-        after = []
-        for i in range(3, n):
-            v = arr[i]
-            if v == 1 and i != n - 1: after.append(v)
-            else: after.append(v + 1)
+        last_index = len(arr) - 1
+        after = [
+            1 if v == 1 and (i + 3) != last_index else v + 1
+            for i, v in enumerate(arr[3:])
+        ]
         arr = arr[:3] + after
-    return sign + "E" + "#".join(map(str, arr[1:]))
+
+    return f"{sign}E{'#'.join(map(str, arr[1:]))}"
+
 # Literally a straight copy from the roblox OmegaNum.lua
 def _suffix(x, suffix_decimals=decimals):
     x = correct(x)
@@ -1246,13 +1212,13 @@ def convert(x):
     if x.startswith("e"): 
         start_array[2] = x.count("e")
         x = x.strip("e")
+
     if 'e' in x:
         before, after = x.split("e")
-        start_array[2] += 1
         start_array[1] = math.log10(float(before)) + float(after)
+
     if 'F' in x:
         before, after = x.split("F")
-        start_array[3] += 1
         start_array[2] = int(math.log10(float(before)) + float(after))
         start_array[1] = 10 ** (math.log10(float(before)) + float(after) - start_array[2])
     # This will definitely slow it down, but i cannot find a different way to do this
@@ -1275,6 +1241,7 @@ def convert(x):
         return arrow(10,float(after)+1,float(before), prec=False)
     return correct(start_array)
 bot.run(token)
+
 
 
 
