@@ -65,7 +65,6 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # ---------------------
 @bot.event
 async def on_ready():
-    load_state()
     await bot.tree.sync()
     print(f"✅ Logged in as {bot.user}")
 # ---------------------
@@ -1232,6 +1231,7 @@ def convert(x):
         return arrow(10,float(after)+1,float(before), prec=False)
     return correct(start_array)
 bot.run(token)
+
 
 
 
