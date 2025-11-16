@@ -368,7 +368,8 @@ def correct(x):
     if isinstance(x, str):
         s = x.strip()
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
-        return convert(s)
+        if (x in ("}", "^", ")")) or (count_repeating(x, "e") == x.count("e")): return fromstring(x)
+        return fromformat(s)
 
     if isinstance(x, list):
         arr = x[:]
@@ -382,7 +383,7 @@ def correct(x):
                 except ValueError: raise ValueError(f"Element at index {i} must be a number (array:{arr})")
             elif not isinstance(arr[i], (int, float)): raise ValueError(f"Element at index {i} must be a number (array:{arr})")
             if arr[i] < 0: raise ValueError(f"Element at index {i} must be positive (array:{arr})")
-
+        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
         changed = True
         while changed:
             changed = False
@@ -395,8 +396,7 @@ def correct(x):
                         else: arr.append(1)
                     else:
                         arr[1] = L
-                        for j in range(2, i):
-                            arr[j] = 1
+                        for j in range(2, i): arr[j] = 1
                         if i == 2: arr[2] = 1
                         else: arr[i] = 0
                         if i == len(arr) - 1: arr.append(1)
@@ -405,8 +405,7 @@ def correct(x):
                     break
 
         for i in range(1, len(arr)):
-            if isinstance(arr[i], float) and arr[i] <= MAX_SAFE_INT and arr[i].is_integer():
-                arr[i] = int(arr[i])
+            if isinstance(arr[i], float) and arr[i] <= MAX_SAFE_INT and arr[i].is_integer(): arr[i] = int(arr[i])
 
         while len(arr) >= 3 and arr[2] >= 1 and arr[1] <= _log10(MAX_SAFE_INT):
             collapsed_val = 10 ** arr[1]
@@ -424,16 +423,14 @@ def correct(x):
             if i == len(arr): arr.append(1)
             if arr[i] == 0: arr[i] = 0
             else: arr[i] -= 1
+            num_nine = 1 if z == 2 else z
             a1 = arr[1]
             if isinstance(a1, float) and a1.is_integer(): a1 = a1
-            a2 = [a1 - 2] if a1 == 1 else [a1 - 1]
-            arr = correct(arr[:2] + a2 + arr[i:])
-
-        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
+            mid = [9] * num_nine
+            arr = correct(arr[:2] + mid + arr[i:])
 
         return arr
     raise TypeError("Unsupported type for correct")
-
 def from_hyper_e(x):
     if not x.lstrip('-').startswith('E'): raise ValueError("Not a hyper_e string")
     sign = int(x.startswith('-'))
@@ -1174,13 +1171,21 @@ def format(num, decimals=decimals, small=False):
         pol = polarize(n, True)
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
-def count_repeating(s):
-    for i, ch in enumerate(s):
-        if ch != s[0]:
-            return i
-    return len(s)    
+def count_repeating(s, target=None):
+    if not s:
+        return 0
+    if target is None:
+        target = s[0]
+    
+    count = 0
+    for ch in s:
+        if ch == target:
+            count += 1
+        else:
+            break
+    return count
 
-def convert(x):
+def fromformat(x):
     start_array = [0, 0, 0, 0, 0, 0]
     x = x.replace(",", "")
     if x.startswith("-"): 
@@ -1202,11 +1207,10 @@ def convert(x):
     if x.startswith("e"): 
         start_array[2] = x.count("e")
         x = x.strip("e")
-
     if 'e' in x:
         before, after = x.split("e")
         start_array[1] = math.log10(float(before)) + float(after)
-
+        if start_array[2] == 0: start_array[2] = 1
     if 'F' in x:
         before, after = x.split("F")
         start_array[2] = int(math.log10(float(before)) + float(after))
@@ -1218,6 +1222,7 @@ def convert(x):
         start_array[3] =+ pentated[3]
         start_array[2] =+ pentated[2]
         start_array[1] =+ pentated[1]
+    
     # same here
     if 'H' in x:
         before, after = x.split("H")
@@ -1230,7 +1235,68 @@ def convert(x):
         before, after = x.split("J")
         return arrow(10,float(after)+1,float(before), prec=False)
     return correct(start_array)
+# Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent 2h 15min for this trash
+def fromstring(x):
+    if x.startswith("(10"):
+        size = x.strip("(10")
+        size = count_repeating(size)
+    if x.startswith("(10{"):
+        size = x.strip("(10{")
+        after = x.split("})^", 1)[1]
+        size = int(after.split(None, 1)[0])
+    if x.startswith("10{"):
+        size = x.strip("10").strip("{")
+        before, after = size.split("}", 1)
+        size = int(before)
+    if x.startswith("10^"):
+        size = x.strip("10")
+        size = count_repeating(size)
+    if x.startswith("e"): size = 1
+    array = [0] * (size+2)
+    if x.startswith("-"): 
+        array[0] = 1
+        x = x.strip("-")
+    def logic(x):
+        try:  array[1] = float(x)
+        except: pass
+        if x.startswith("(10^"):
+            x2 = x.strip("(10")
+            count = count_repeating(x2)
+            after = x.split(")^", 1)[1]
+            num = after.split(None, 1)[0]
+            array[count + 1] = int(num)
+            before, after = x.split(" ", 1)
+            x = after
+            logic(x)
+        if x.startswith("10^"):
+           lst = list(x)
+           x =  x.strip("10")
+           count = count_repeating(x)
+           array[count +1] = 1
+           x= "".join(lst[2+count:])
+           logic(x)
+        if x.startswith("(10{"):
+            x = x.strip("(10{")
+            before, after = x.split("})^", 1)
+            num = after.split(None, 1)[0]
+            array[int(before)+1] = int(num)
+            before, after = x.split(" ", 1)
+            x = after
+            logic(x)
+        if x.startswith("10{"):
+            x = x.removeprefix("10{")
+            before, after = x.split("}", 1)
+            array[int(before) + 1] = 1
+            x = after
+            logic(x)
+        if x.startswith("e"):
+            e = count_repeating(x)
+            array[2] = e
+            array[1] = float(x[x.rfind('e')+1:])
+    logic(x)
+    return correct(array)
 bot.run(token)
+
 
 
 
