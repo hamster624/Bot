@@ -82,6 +82,7 @@ async def guide(ctx):
     help_message = "**📘 !calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
+    help_message += "!!**DO NOT USE ^, *, /, -, + **!! Use the operations that are above this text, if not then there is a big chance of something now working correctly. Correct usage: 10^10 -> pow(10, 10) or 45+55 -> add(45, 55) or 10^10^10 -> pow(10, pow(10, 10))\n"
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
     help_message += "To use hyperlog the 1st number is the number you want to log and 2nd are arrows for example if log10(x) = 10^x and we solve for x but with hypr_log it's hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array or as the default format. \n"
     help_message += "Usage: `!calc <expression> [format]`\n"
@@ -211,7 +212,7 @@ async def calc(ctx, *, expression: str):
         result = formats.get(fmt_name, format)(value)
 
         await ctx.reply(
-            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds",
+            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds \n Use /guide for the correct usage of this command.",
             mention_author=False
         )
     except Exception as e:
@@ -231,6 +232,7 @@ async def guide_slash(interaction: discord.Interaction):
     help_message = "**📘 /calc Help**\n\n"
     help_message += "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
+    help_message += "!!**DO NOT USE ^, *, /, -, + **!! Use the operations that are above this text, if not then there is a big chance of something now working correctly. Correct usage: 10^10 -> pow(10, 10) or 45+55 -> add(45, 55) or 10^10^10 -> pow(10, pow(10, 10))\n"
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
     help_message += "To use hyperlog the 1st number is the number you want to log and 2nd are arrows for example if log10(x) = 10^x and we solve for x but with hypr_log it's hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array or as the default format. \n"
     help_message += "Usage: `/calc <expression> [format]`\n"
@@ -328,7 +330,7 @@ async def calc_slash(
         result = formats[fmt_name](value)
 
         await interaction.followup.send(
-            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds"
+            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds \n Use /guide for the correct usage of this command."
         )
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
@@ -1296,6 +1298,7 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
 
