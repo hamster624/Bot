@@ -86,7 +86,7 @@ async def guide(ctx):
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
     help_message += "To use hyperlog the 1st number is the number you want to log and 2nd are arrows for example if log10(x) = 10^x and we solve for x but with hypr_log it's hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array or as the default format. \n"
     help_message += "Usage: `!calc <expression> [format]`\n"
-    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use the 1F10 format and make sure to put as strings (in ' ') or use the array format or use the hyper_e format."
+    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' ') and the '1F10' format. **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
     await ctx.send(help_message)
 def _eval_in_subprocess(expr: str, safe_globals: dict, q: mp.Queue):
     try:
@@ -236,7 +236,7 @@ async def guide_slash(interaction: discord.Interaction):
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
     help_message += "To use hyperlog the 1st number is the number you want to log and 2nd are arrows for example if log10(x) = 10^x and we solve for x but with hypr_log it's hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array or as the default format. \n"
     help_message += "Usage: `/calc <expression> [format]`\n"
-    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use the 1F10 format and make sure to put as strings (in ' ') or use the array format or use the hyper_e format."
+    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' ') and the '1F10' format. **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
     await interaction.response.send_message(help_message)
 
 # ---------------------
@@ -1298,6 +1298,7 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
 
