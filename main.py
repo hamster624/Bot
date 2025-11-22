@@ -287,87 +287,124 @@ async def guide_slash(interaction: discord.Interaction):
 @bot.tree.command(name="calc", description="Evaluate an expression with format support")
 @app_commands.describe(
     expression="Expression to evaluate",
-    output_format="Optional output format"
+    fmt="Optional output format"
 )
 async def calc_slash(
     interaction: discord.Interaction,
     expression: str,
-    output_format: str = "format"
+    fmt: str = "format"
 ):
     global log_channel_id
     log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
 
-    fmt_name = output_format.lower()
-    if fmt_name not in formats_dict:
+    # ---------------------------
+    # Determine logging location
+    # ---------------------------
+    if interaction.guild is None:
+        if isinstance(interaction.channel, discord.PartialMessageable):
+            channel_name = getattr(interaction.channel, "name", "unknown")
+            location = f"#{channel_name} (hidden – bot not a member)"
+        else:
+            location = "DMs"
+    else:
+        location = f"#{interaction.channel.name} ({interaction.guild.name})"
+
+    # ---------------------------
+    # Format lookup
+    # ---------------------------
+    formats = {
+        "format": format,
+        "string": string,
+        "hyper_e": hyper_e,
+        "suffix": suffix,
+        "array": correct,
+    }
+
+    fmt_name = fmt.lower()
+    if fmt_name not in fmt:
         fmt_name = "format"
 
-    expr = expression.replace("^", "**")
-
-    if interaction.guild:
-        if interaction.guild.me:
-            server_info = f"#{interaction.channel.name} ({interaction.guild.name})"
-        else:
-            server_info = f"#{interaction.channel.name} (hidden – bot not a member)"
-    else:
-        server_info = "DMs"
+    # ---------------------------
+    # Logging
+    # ---------------------------
     if log_channel:
         await log_channel.send(
             f"[/calc] {interaction.user} (ID: {interaction.user.id}) "
-            f"in {server_info} sent: {expr} | format: {fmt_name}"
+            f"in {location} "
+            f"sent: {expression} | format: {fmt_name}"
         )
-    safe_globals = {
-        "__builtins__": {},
-        "math": math,
-        "add": add,
-        "sub": sub,
-        "mul": mul,
-        "div": div,
-        "pow": pow,
-        "power": power,
-        "exp": exp,
-        "root": root,
-        "sqrt": sqrt,
-        "floor": floor,
-        "ceil": ceil,
-        "min": min,
-        "max": max,
-        "eq": eq,
-        "lt": lt,
-        "gt": gt,
-        "gte": gte,
-        "lte": lte,
-        "fact": fact,
-        "factorial": factorial,
-        "gamma": gamma,
-        "lambertw": lambertw,
-        "log": log,
-        "ln": ln,
-        "logbase": logbase,
-        "slog": slog,
-        "plog": plog,
-        "hlog": hlog,
-        "hyper_log": hyper_log,
-        "tetration": tetration,
-        "tetr": tetration,
-        "pent": pent,
-        "hex": hex,
-        "hept": hept,
-        "arrow": arrow,
-        "addlayer": addlayer,
-    }
 
+    # ---------------------------
+    # Defer response
+    # ---------------------------
     try:
         await interaction.response.defer(thinking=True)
-        value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
-        result = formats_dict[fmt_name](value)
+    except Exception:
+        logging.exception("Failed to defer interaction (fallback to followup).")
+
+    # ---------------------------
+    # Eval logic
+    # ---------------------------
+    try:
+        expr = expression.replace("^", "**")
+
+        safe_globals = {
+            "__builtins__": {},
+            "math": math,
+            "tetration": tetration,
+            "tetr": tetration,
+            "pent": pent,
+            "hex": hex,
+            "hept": hept,
+            "arrow": arrow,
+            "fact": fact,
+            "factorial": factorial,
+            "gamma": gamma,
+            "slog": slog,
+            "plog": plog,
+            "hlog": hlog,
+            "hyper_log": hyper_log,
+            "addlayer": addlayer,
+            "add": add,
+            "sub": sub,
+            "mul": mul,
+            "div": div,
+            "pow": pow,
+            "power": power,
+            "exp": exp,
+            "lambertw": lambertw,
+            "root": root,
+            "sqrt": sqrt,
+            "eq": eq,
+            "lt": lt,
+            "gte": gte,
+            "gt": gt,
+            "lte": lte,
+            "min": min,
+            "max": max,
+            "floor": floor,
+            "ceil": ceil,
+            "log": log,
+            "ln": ln,
+            "logbase": logbase
+        }
+
+        try:
+            value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
+        except TimeoutError:
+            await interaction.followup.send("⏱ Took too long (>0.1s) — skipped.")
+            return
+
+        result = fmt[fmt_name](value)
+
         await interaction.followup.send(
-            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds\nUse /guide for help."
+            f"**Result:** ```{result}```\n"
+            f"⏱ Evaluated in {elapsed:.6f} seconds\n"
+            f"Use /guide for the correct usage of this command."
         )
-    except TimeoutError:
-        await interaction.followup.send("⏱ Took too long (>0.1s) — skipped.")
+
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
-
 import math
 # if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
 #import sys
@@ -1335,6 +1372,7 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
 
