@@ -92,7 +92,7 @@ async def guide(ctx):
         )
     formats = ["format","array","hyper_e","suffix", "string"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
-                  "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
+                  "log", "ln", "logbase", "slog", "plog (penta-log)", "hlog (hexa-log)", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
@@ -102,7 +102,7 @@ async def guide(ctx):
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
     help_message += "!!**DO NOT USE ^, *, /, -, + **!! Use the operations that are above this text, if not then there is a big chance of something not working correctly. Correct usage: 10^10 -> pow(10, 10) or 45+55 -> add(45, 55) or 10^10^10 -> pow(10, pow(10, 10))\n"
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
-    help_message += "To use hyperlog the 1st number is the number you want to log and 2nd are arrows for example if log10(x) = 10^x and we solve for x but with hypr_log it's hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array or as the default format. \n"
+    help_message += "Hyper_log(num, height) lets you set the height of the number you log. Example: hyper_log(1000,3) is penta-log of 1000 because the height of 3 is pentation (^^^).\n"
     help_message += "Usage: `!calc <expression> [format]`\n"
     help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' ') and the '1F10' format. **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
     await ctx.send(help_message)
@@ -276,7 +276,7 @@ async def guide_slash(interaction: discord.Interaction):
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
     help_message += "!!**DO NOT USE ^, *, /, -, + **!! Use the operations that are above this text, if not then there is a big chance of something not working correctly. Correct usage: 10^10 -> pow(10, 10) or 45+55 -> add(45, 55) or 10^10^10 -> pow(10, pow(10, 10))\n"
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
-    help_message += "To use hyperlog the 1st number is the number you want to log and 2nd are arrows for example if log10(x) = 10^x and we solve for x but with hypr_log it's hyper_log(x, 5) = 10^^^^^x where we solve for x. Make sure x is either in hyper_e or as an array or as the default format. \n"
+    help_message += "Hyper_log(num, height) lets you set the height of the number you log. Example: hyper_log(1000,3) is penta-log of 1000 because the height of 3 is pentation (^^^).\n"
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' ') and the '1F10' format. **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
     await interaction.response.send_message(help_message)
@@ -1358,6 +1358,7 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
 
