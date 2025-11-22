@@ -72,6 +72,24 @@ async def on_ready():
 # ---------------------
 @bot.command()
 async def guide(ctx):
+    global log_channel_id
+    log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
+    if ctx.guild is None:
+        if isinstance(ctx.channel, discord.PartialMessageable):
+            channel_name = getattr(ctx.channel, "name", "unknown")
+            location = f"#{channel_name} (hidden – bot not a member)"
+        else:
+            location = "DMs"
+    else:
+        location = f"#{ctx.channel.name} ({ctx.guild.name})"
+
+    # -------------------------------------------------------
+    # Logging
+    # -------------------------------------------------------
+    if log_channel:
+        await log_channel.send(
+            f"[!guide] {ctx.author} (ID: {ctx.author.id}) in {location}"
+        )
     formats = ["format","array","hyper_e","suffix", "string"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
@@ -141,13 +159,6 @@ async def calc(ctx, *, expression: str):
     global log_channel_id
     log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
 
-    if log_channel:
-        await log_channel.send(
-            f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
-            f"in {'DMs' if not ctx.guild else f'#{ctx.channel.name} ({ctx.guild.name})'} "
-            f"sent: {expression}"
-        )
-
     formats = {
         "format": format,
         "string": string,
@@ -155,15 +166,32 @@ async def calc(ctx, *, expression: str):
         "suffix": suffix,
         "array": correct,
     }
+
     try:
+        # ---- Parse format ----
         tokens = expression.split()
         fmt_name = "format"
+
         if tokens and tokens[-1].lower() in formats:
             fmt_name = tokens[-1].lower()
             tokens = tokens[:-1]
 
         expr = " ".join(tokens).replace("^", "**")
 
+        if ctx.guild is None:
+            location = "Server (hidden – bot not a member)" if isinstance(ctx.channel, discord.PartialMessageable) else "DMs"
+        else:
+            location = f"#{ctx.channel.name} ({ctx.guild.name})"
+
+        # ---- Logging ----
+        if log_channel:
+            await log_channel.send(
+                f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
+                f"in {location} "
+                f"sent: {expr} | format: {fmt_name}"
+            )
+
+        # ---- Safe eval environment ----
         safe_globals = {
             "__builtins__": {},
             "math": math,
@@ -204,17 +232,21 @@ async def calc(ctx, *, expression: str):
             "ln": ln,
             "logbase": logbase
         }
+
+        # ---- Evaluate ----
         try:
             value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
             await ctx.reply("⏱ Took too long (>0.1s) — skipped.", mention_author=False)
             return
+
         result = formats.get(fmt_name, format)(value)
 
         await ctx.reply(
-            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds \n Use /guide for the correct usage of this command.",
+            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds \nUse /guide for usage.",
             mention_author=False
         )
+
     except Exception as e:
         await ctx.reply(f"❌ Error: `{e}`", mention_author=False)
 # ---------------------
@@ -222,6 +254,16 @@ async def calc(ctx, *, expression: str):
 # ---------------------
 @bot.tree.command(name="guide", description="Shows help for the calculator")
 async def guide_slash(interaction: discord.Interaction):
+    global log_channel_id
+    log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
+
+    if interaction.guild is None:location = "Server (hidden – bot not a member)" if isinstance(interaction.channel, discord.PartialMessageable) else "DMs"
+    else:location = f"#{interaction.channel.name} ({interaction.guild.name})"
+    if log_channel:
+        await log_channel.send(
+            f"[/guide] {interaction.user} (ID: {interaction.user.id}) "
+            f"in {location}"
+        )
     formats = ["format","array","hyper_e","suffix", "string"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
@@ -245,22 +287,31 @@ async def guide_slash(interaction: discord.Interaction):
 @bot.tree.command(name="calc", description="Evaluate an expression with format support")
 @app_commands.describe(
     expression="Expression to evaluate",
-    fmt="Optional output format"
+    format="Optional output format"
 )
 async def calc_slash(
     interaction: discord.Interaction,
     expression: str,
-    fmt: str = "format"
+    format: str = "format"
 ):
     global log_channel_id
     log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
 
-    if log_channel:
-        await log_channel.send(
-            f"[/calc] {interaction.user} (ID: {interaction.user.id}) "
-            f"in {'DMs' if not interaction.guild else f'#{interaction.channel.name} ({interaction.guild.name})'} "
-            f"sent: {expression}"
-        )
+    # ---------------------------
+    # Determine logging location
+    # ---------------------------
+    if interaction.guild is None:
+        if isinstance(interaction.channel, discord.PartialMessageable):
+            channel_name = getattr(interaction.channel, "name", "unknown")
+            location = f"#{channel_name} (hidden – bot not a member)"
+        else:
+            location = "DMs"
+    else:
+        location = f"#{interaction.channel.name} ({interaction.guild.name})"
+
+    # ---------------------------
+    # Format lookup
+    # ---------------------------
     formats = {
         "format": format,
         "string": string,
@@ -268,15 +319,35 @@ async def calc_slash(
         "suffix": suffix,
         "array": correct,
     }
-    deferred = False
+
+    fmt_name = format.lower()
+    if fmt_name not in formats:
+        fmt_name = "format"
+
+    # ---------------------------
+    # Logging
+    # ---------------------------
+    if log_channel:
+        await log_channel.send(
+            f"[/calc] {interaction.user} (ID: {interaction.user.id}) "
+            f"in {location} "
+            f"sent: {expression} | format: {fmt_name}"
+        )
+
+    # ---------------------------
+    # Defer response
+    # ---------------------------
     try:
         await interaction.response.defer(thinking=True)
-        deferred = True
-    except Exception as e:
-        logging.exception("Failed to defer interaction (will fall back to channel send).")
+    except Exception:
+        logging.exception("Failed to defer interaction (fallback to followup).")
 
+    # ---------------------------
+    # Eval logic
+    # ---------------------------
     try:
         expr = expression.replace("^", "**")
+
         safe_globals = {
             "__builtins__": {},
             "math": math,
@@ -317,21 +388,21 @@ async def calc_slash(
             "ln": ln,
             "logbase": logbase
         }
+
         try:
             value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
             await interaction.followup.send("⏱ Took too long (>0.1s) — skipped.")
             return
 
-        fmt_name = fmt.lower()
-        if fmt_name not in formats:
-            fmt_name = "format"
-
         result = formats[fmt_name](value)
 
         await interaction.followup.send(
-            f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds \n Use /guide for the correct usage of this command."
+            f"**Result:** ```{result}```\n"
+            f"⏱ Evaluated in {elapsed:.6f} seconds\n"
+            f"Use /guide for the correct usage of this command."
         )
+
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
 import math
@@ -1301,6 +1372,7 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
 
