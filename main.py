@@ -307,7 +307,7 @@ async def calc_slash(
         location = f"#{interaction.channel.name} ({interaction.guild.name})"
 
     formats = {
-        "format": format_fn,
+        "format": format,
         "string": string,
         "hyper_e": hyper_e,
         "suffix": suffix,
@@ -1358,6 +1358,7 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
 
