@@ -297,9 +297,6 @@ async def calc_slash(
     global log_channel_id
     log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
 
-    # ---------------------------
-    # Determine logging location
-    # ---------------------------
     if interaction.guild is None:
         if isinstance(interaction.channel, discord.PartialMessageable):
             channel_name = getattr(interaction.channel, "name", "unknown")
@@ -309,11 +306,8 @@ async def calc_slash(
     else:
         location = f"#{interaction.channel.name} ({interaction.guild.name})"
 
-    # ---------------------------
-    # Format lookup
-    # ---------------------------
     formats = {
-        "format": format,
+        "format": format_fn,
         "string": string,
         "hyper_e": hyper_e,
         "suffix": suffix,
@@ -321,12 +315,9 @@ async def calc_slash(
     }
 
     fmt_name = fmt.lower()
-    if fmt_name not in fmt:
+    if fmt_name not in formats:
         fmt_name = "format"
 
-    # ---------------------------
-    # Logging
-    # ---------------------------
     if log_channel:
         await log_channel.send(
             f"[/calc] {interaction.user} (ID: {interaction.user.id}) "
@@ -334,17 +325,11 @@ async def calc_slash(
             f"sent: {expression} | format: {fmt_name}"
         )
 
-    # ---------------------------
-    # Defer response
-    # ---------------------------
     try:
         await interaction.response.defer(thinking=True)
     except Exception:
         logging.exception("Failed to defer interaction (fallback to followup).")
 
-    # ---------------------------
-    # Eval logic
-    # ---------------------------
     try:
         expr = expression.replace("^", "**")
 
@@ -395,7 +380,7 @@ async def calc_slash(
             await interaction.followup.send("⏱ Took too long (>0.1s) — skipped.")
             return
 
-        result = fmt[fmt_name](value)
+        result = formats[fmt_name](value)
 
         await interaction.followup.send(
             f"**Result:** ```{result}```\n"
@@ -405,6 +390,7 @@ async def calc_slash(
 
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`")
+
 import math
 # if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
 #import sys
@@ -1372,6 +1358,7 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
 
