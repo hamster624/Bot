@@ -369,8 +369,10 @@ def correct(x):
 
     if isinstance(x, str):
         s = x.strip()
+        s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
-        if (x in ("}", "^", ")")) or (count_repeating(x, "e") == x.count("e")): return fromstring(x)
+        if (s in ("}", "^", ")")) or (count_repeating(s, "e") == s.count("e")):
+            if s.count("e") != 0: return fromstring(s)
         return fromformat(s)
 
     if isinstance(x, list):
@@ -385,7 +387,6 @@ def correct(x):
                 except ValueError: raise ValueError(f"Element at index {i} must be a number (array:{arr})")
             elif not isinstance(arr[i], (int, float)): raise ValueError(f"Element at index {i} must be a number (array:{arr})")
             if arr[i] < 0: raise ValueError(f"Element at index {i} must be positive (array:{arr})")
-        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
         changed = True
         while changed:
             changed = False
@@ -425,12 +426,12 @@ def correct(x):
             if i == len(arr): arr.append(1)
             if arr[i] == 0: arr[i] = 0
             else: arr[i] -= 1
-            num_nine = 1 if z == 2 else z
+            num_eights = 1 if z == 2 else (z - 1)
             a1 = arr[1]
             if isinstance(a1, float) and a1.is_integer(): a1 = a1
-            mid = [9] * num_nine
-            arr = correct(arr[:2] + mid + arr[i:])
-
+            mid = [8] * num_eights + [a1 - 2]
+            arr = arr[:2] + mid + arr[i:]
+        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
         return arr
     raise TypeError("Unsupported type for correct")
 def from_hyper_e(x):
@@ -1205,12 +1206,14 @@ def fromformat(x):
     if x.startswith("F"): 
         start_array[3] = count_repeating(x)
         x = x.strip("F")
-
-    if x.startswith("e"): 
+    
+    if x.startswith("e") and (x.count("e") != 1): 
+        print(1111111)
         start_array[2] = x.count("e")
         x = x.strip("e")
     if 'e' in x:
         before, after = x.split("e")
+        if before == "": before = 1
         start_array[1] = math.log10(float(before)) + float(after)
         if start_array[2] == 0: start_array[2] = 1
     if 'F' in x:
@@ -1298,6 +1301,7 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
 
