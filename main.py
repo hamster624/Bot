@@ -247,7 +247,7 @@ async def calc(ctx, *, expression: str):
             mention_author=False
         )
     except SyntaxError as e:
-        await interaction.followup.send(f"❌ Syntax Error: Invalid syntax. Check /guide for proper syntax.")
+        await ctx.reply(f"❌ Syntax Error: Invalid syntax. Check /guide for proper syntax.")
     except Exception as e:
         await ctx.reply(f"❌ Error: `{e}`", mention_author=False)
 # ---------------------
@@ -1365,5 +1365,6 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
 
