@@ -391,8 +391,8 @@ async def calc_slash(
 
     except SyntaxError as e:
         await interaction.followup.send(f"❌ Syntax Error: Invalid syntax. Check /guide for proper syntax.")
-	except Exception as e:
-    	await interaction.followup.send(f"❌ Error: `{e}`")
+    except Exception as e:
+        await interaction.followup.send(f"❌ Error: `{e}`")
 
 import math
 # if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
@@ -1365,3 +1365,4 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
