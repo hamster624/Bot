@@ -399,10 +399,10 @@ import math
 #import sys
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
-decimals = 6 # How many decimals (duh). Max 16
-precise_arrow = True # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
+decimals = 16 # How many decimals (duh). Max 16
+precise_arrow = False # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
 arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
-max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -1365,4 +1365,5 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
+
 
