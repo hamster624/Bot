@@ -246,7 +246,8 @@ async def calc(ctx, *, expression: str):
             f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds \nUse /guide for usage.",
             mention_author=False
         )
-
+    except SyntaxError as e:
+        await interaction.followup.send(f"❌ Syntax Error: Invalid syntax. Check /guide for proper syntax.")
     except Exception as e:
         await ctx.reply(f"❌ Error: `{e}`", mention_author=False)
 # ---------------------
@@ -388,18 +389,20 @@ async def calc_slash(
             f"Use /guide for the correct usage of this command."
         )
 
-    except Exception as e:
-        await interaction.followup.send(f"❌ Error: `{e}`")
+    except SyntaxError as e:
+        await interaction.followup.send(f"❌ Syntax Error: Invalid syntax. Check /guide for proper syntax.")
+	except Exception as e:
+    	await interaction.followup.send(f"❌ Error: `{e}`")
 
 import math
 # if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
 #import sys
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
-decimals = 16 # How many decimals (duh). Max 16
-precise_arrow = False # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
+decimals = 6 # How many decimals (duh). Max 16
+precise_arrow = True # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
 arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
-max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -428,8 +431,7 @@ def correct(x):
         s = x.strip()
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
-        if (s in ("}", "^", ")")) or (count_repeating(s, "e") == s.count("e")):
-            if s.count("e") != 0: return fromstring(s)
+        if any(c in "}^)" for c in s): return fromstring(s)
         return fromformat(s)
 
     if isinstance(x, list):
@@ -721,14 +723,18 @@ def abs_val(x):
     return correct([0] + x[1:])
 def add(a, b):
     a, b = correct(a), correct(b)
-    if gt(a, [0, 15.954589770191003, 2]) or gt(b, [0, 15.954589770191003, 2]): return maximum(a,b)
+    if gt(a, [0, 15.95458977019, 2]) or gt(b, [0, 15.95458977019, 2]): return maximum(a,b)
     if a[0] == 1 and b[0] == 1: return neg(add(neg(a),neg(b)))
     if a[0] == 1 and b[0] == 0: return subtract(b, neg(a))
     if a[0] == 0 and b[0] == 1: return subtract(a, neg(b))
     if len(a) == 3 or len(b) == 3:
         if (len(a) > 2 and a[2] > 1) or (len(b) > 2 and b[2] > 1): return maximum(a, b)
     if len(a) == 2 and len(b) == 2: return correct([0, tofloat(a) + tofloat(b)])
-    return addlayer(tofloat(log(a)) + tofloat(log(1 + tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))
+    loga = tofloat(log(a))
+    logb = tofloat(log(b))
+    M = max(loga, logb)
+    m = min(loga, logb)
+    return addlayer(M + tofloat(log(1 + 10**(m - M))))
 
 def subtract(a,b):
     a, b = correct(a), correct(b)
@@ -1264,9 +1270,8 @@ def fromformat(x):
         start_array[3] = count_repeating(x)
         x = x.strip("F")
     
-    if x.startswith("e") and (x.count("e") != 1): 
-        print(1111111)
-        start_array[2] = x.count("e")
+    if x.startswith("e") and (x.count("e") != 1):
+        start_array[2] = x.count("e")-1
         x = x.strip("e")
     if 'e' in x:
         before, after = x.split("e")
@@ -1296,6 +1301,8 @@ def fromformat(x):
     if 'J' in x:
         before, after = x.split("J")
         return arrow(10,float(after)+1,float(before), prec=False)
+    try: start_array[1] += float(x)
+    except: pass
     return correct(start_array)
 # Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent 2h 15min for this trash
 def fromstring(x):
@@ -1358,24 +1365,3 @@ def fromstring(x):
     logic(x)
     return correct(array)
 bot.run(token)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
