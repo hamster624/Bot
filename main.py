@@ -90,7 +90,7 @@ async def guide(ctx):
         await log_channel.send(
             f"[!guide] {ctx.author} (ID: {ctx.author.id}) in {location}"
         )
-    formats = ["format","array","hyper_e","suffix", "string"]
+    formats = ["format","array","hyper_e","suffix", "string", "arrow_format"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog (penta-log)", "hlog (hexa-log)", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
@@ -165,6 +165,7 @@ async def calc(ctx, *, expression: str):
         "hyper_e": hyper_e,
         "suffix": suffix,
         "array": correct,
+        "arrow_format": arrow_format,
     }
 
     try:
@@ -265,7 +266,7 @@ async def guide_slash(interaction: discord.Interaction):
             f"[/guide] {interaction.user} (ID: {interaction.user.id}) "
             f"in {location}"
         )
-    formats = ["format","array","hyper_e","suffix", "string"]
+    formats = ["format","array","hyper_e","suffix", "string", "arrow_format"]
     operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
@@ -313,6 +314,7 @@ async def calc_slash(
         "hyper_e": hyper_e,
         "suffix": suffix,
         "array": correct,
+        "arrow_format": arrow_format,
     }
 
     fmt_name = fmt.lower()
@@ -1364,7 +1366,15 @@ def fromstring(x):
             array[1] = float(x[x.rfind('e')+1:])
     logic(x)
     return correct(array)
+def arrow_format(x):
+    x = correct(x)
+    if lt(x, 1e9): return format(x)
+    pol = polarize(x)
+    arrow = pol['height']+1
+    if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
+    return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 bot.run(token)
+
 
 
 
