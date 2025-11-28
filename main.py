@@ -395,7 +395,6 @@ async def calc_slash(
         await interaction.followup.send(f"❌ Syntax Error: Invalid syntax. Check /guide for proper syntax.")
     except Exception as e:
         await interaction.followup.send(f"❌ Error: `{e}`. **Check /guide for proper usage.**")
-
 import math
 # if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
 #import sys
@@ -441,7 +440,7 @@ def correct(x):
         if not arr: return [0, 0]
         if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
         if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
-
+        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
         for i in range(1, len(arr)):
             if isinstance(arr[i], str):
                 try: arr[i] = float(arr[i])
@@ -492,7 +491,7 @@ def correct(x):
             if isinstance(a1, float) and a1.is_integer(): a1 = a1
             mid = [8] * num_eights + [a1 - 2]
             arr = arr[:2] + mid + arr[i:]
-        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
+        
         return arr
     raise TypeError("Unsupported type for correct")
 def from_hyper_e(x):
@@ -701,6 +700,7 @@ def log(x):
 def slog(x): return hyper_log(x, 2)
 def plog(x): return hyper_log(x, 3)
 def hlog(x): return hyper_log(x, 4)
+# Optimized to oblivion but now i barely understand what i did here. On a lenght of 100 elements array with random ints previous version took 0.0925163 seconds while now its only 0.0004117 seconds or on 1000 lenght its 25.8783556 seconds to 0.0015992 seconds so readable code != speed
 def hyper_log(x, k):
     if not _is_int_like(k) or tofloat(k) < 0: raise ValueError("hyper_log height must be a non-negative integer-like value")
     k = tofloat(k)
@@ -710,10 +710,13 @@ def hyper_log(x, k):
     if lte(arr, 10): return correct(_log10(arr[1]))
     if k == 1: return correct(log(arr))
     arr_len = len(arr)
-    if lte(arr, [0, 10000000000] + [8] * max(0, k - 2)): return correct(_log10(tofloat(hyper_log(arr, k - 1))) + 1)
-    if arr_len < (k + 1): return correct(_log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
+    pol = polarize(x, True)
+    start = _log10(pol['bottom']) + pol['top']
+    for i in range(k-pol["height"]-1): start = _log10(start)+1
     if arr_len == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
     if arr_len == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
+    if arr_len > (k + 2): return x
+    return correct(start)
 def addlayer(x, _add=0):
     arr = correct(x)
     if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-(arr[1]+_add))])
@@ -898,7 +901,12 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
     if eq(r, 1): return power(t, n)
     if eq(r, 2): return tetration(t, n)
     if eq(t,2) and eq(n,2): return [0, 4]
-    if prec == False and r > arrow_precision and gte(n,2):
+    if prec == False and r > arrow_precision:
+        if r > 60 and lt(n,2):
+            amount=arrow(t,60,n, a_arg, True)
+            pol = polarize(amount)
+            return [0, 10000000000] + [8] * (r-(61-pol["height"])-arrow_precision)+ amount[-(arrow_precision):]
+        if r <= 60 and lt(n,2): return arrow(t, r,n,a_arg,True)
         arrow_amount = _arrow(t,arrow_precision,n, a_arg, True)
         if eq(n,2): return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision):]
         return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
@@ -1383,3 +1391,4 @@ def arrow_format(x):
     if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
     return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 bot.run(token)
+
