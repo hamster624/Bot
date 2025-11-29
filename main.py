@@ -401,9 +401,9 @@ import math
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-precise_arrow = False # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
+precise_arrow = False # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
 arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
-max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -708,7 +708,7 @@ def hyper_log(x, k):
     arr = correct(x)
     if arr[0] == 1: raise ValueError("Can't hyper_log a negative")
     if lte(arr, 10): return correct(_log10(arr[1]))
-    if k == 1: return correct(log(arr))
+    if k == 1: return log(arr)
     arr_len = len(arr)
     pol = polarize(x, True)
     start = _log10(pol['bottom']) + pol['top']
@@ -901,16 +901,20 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
     if eq(r, 1): return power(t, n)
     if eq(r, 2): return tetration(t, n)
     if eq(t,2) and eq(n,2): return [0, 4]
+    s = tofloat2(n)
+    s_t = tofloat2(t)
+    if prec == False and s != None and lt(n,2) and s_t != None:
+        amount = 0
+        for i in range(r):
+            if 2<s: 
+                break
+            amount += 1
+            s = math.pow(s_t, s-1)
+        return _arrow(s_t,r-amount,s, prec=False)
     if prec == False and r > arrow_precision:
-        if r > 60 and lt(n,2):
-            amount=arrow(t,60,n, a_arg, True)
-            pol = polarize(amount)
-            return [0, 10000000000] + [8] * (r-(61-pol["height"])-arrow_precision)+ amount[-(arrow_precision):]
-        if r <= 60 and lt(n,2): return arrow(t, r,n,a_arg,True)
         arrow_amount = _arrow(t,arrow_precision,n, a_arg, True)
         if eq(n,2): return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision):]
         return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
-    s = tofloat2(n)
     if s is None:
         arr_n = correct(n)
         target_len = r + 2
@@ -918,7 +922,6 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
         arr_res[-1] = 1
         return correct(arr_res)
 
-    s_t = tofloat2(t)
     if s_t is None:
         arr_t = correct(t)
         target_len = r + 1
@@ -1391,4 +1394,5 @@ def arrow_format(x):
     if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
     return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 bot.run(token)
+
 
