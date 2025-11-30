@@ -423,8 +423,7 @@ MultOnes = [
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
-def log5(x): return math.log(x,5)
-_log10 = log5
+_log10 = math.log10
 
 # You can ignore these, these are only to help the code.
 def correct(x, base3=10):
@@ -442,19 +441,20 @@ def correct(x, base3=10):
         if not arr: return [0, 0]
         if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
         if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
-        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
+
         for i in range(1, len(arr)):
             if isinstance(arr[i], str):
                 try: arr[i] = float(arr[i])
                 except ValueError: raise ValueError(f"Element at index {i} must be a number (array:{arr})")
             elif not isinstance(arr[i], (int, float)): raise ValueError(f"Element at index {i} must be a number (array:{arr})")
             if arr[i] < 0: raise ValueError(f"Element at index {i} must be positive (array:{arr})")
+        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
         changed = True
         while changed:
             changed = False
             for i in range(len(arr)-1, 0, -1):
                 if arr[i] > MAX_SAFE_INT:
-                    L = math.log(arr[i], base3)
+                    L = math.log(arr[i],base3)
                     if i == 1:
                         arr[1] = L
                         if len(arr) > 2: arr[2] += 1
@@ -488,12 +488,12 @@ def correct(x, base3=10):
             if i == len(arr): arr.append(1)
             if arr[i] == 0: arr[i] = 0
             else: arr[i] -= 1
-            num_eights = 1 if z == 2 else (z - 1)
+            num_nine = 1 if z == 2 else z
             a1 = arr[1]
             if isinstance(a1, float) and a1.is_integer(): a1 = a1
-            mid = [8] * num_eights + [a1 - 2]
-            arr = arr[:2] + mid + arr[i:]
-        
+            mid = [9] * num_nine
+            arr = correct(arr[:2] + mid + arr[i:])
+
         return arr
     raise TypeError("Unsupported type for correct")
 def from_hyper_e(x):
@@ -695,19 +695,45 @@ def plog(x, base=10): return hyper_log(x, base, 3)
 def hlog(x, base=10): return hyper_log(x, base, 4)
 # Optimized to oblivion but now i barely understand what i did here. On a lenght of 100 elements array with random ints previous version took 0.0925163 seconds while now its only 0.0004117 seconds or on 1000 lenght its 25.8783556 seconds to 0.0015992 seconds so readable code != speed
 def hyper_log(x, base2=10, k=1):
-    x = correct(x, base2)
-    base2 = tofloat(correct(base2))
-    if base2 == None: base2 = 10
-    if base2 <= 1: raise ValueError("Undefined for base being under or equal to 1")
-    if not _is_int_like(k) or tofloat(k) < 0: raise ValueError("hyper_log height must be a non-negative integer-like value")
+    y = correct(x)
+    try: x = correct(x, base2)
+    except:pass
+    base4= correct(base2)
+    base2 = tofloat(base2)
     k = tofloat(k)
     if k < 1: raise ValueError("k must be >= 1")
     if x[0] == 1: raise ValueError("Can't hyper_log a negative")
-    if lte(x, 10): return correct(math.log(x[1], base2))
     if k == 1: return logbase(x, base2)
+    if base2 == None or gt(base4,10):
+        if gt(maximum(base4, y), [0, 10000000000, 9007199254740989]):
+            if gt(y,base4): return y
+            return [0, 0]
+        r = 0
+        if len(base4) == 2: base4.append(0)
+        if len(y) == 2: y.append(0)
+        t = y[2] - base4[2]
+        if t > 3:
+            l = t - 3
+            r += l
+            y[2] = y[2]-l
+        for i in range(5):
+            if lt(y,0):
+                y = power(base4,y)
+                r -= 1
+            elif lte(y,1):
+                result = r + tofloat(y) - 1
+                for _ in range(k-2):
+                    result = math.log(result, tofloat(base4))+1
+                return [0, result]
+            else:
+                r += 1
+                y = logbase(y, base4)
+    if base2 <= 1: raise ValueError("Undefined for base being under or equal to 1")
+    if not _is_int_like(k) or tofloat(k) < 0: raise ValueError("hyper_log height must be a non-negative integer-like value")
+    if lte(x, 10): return correct(math.log(x[1], base2))
     arr_len = len(x)
     pol = polarize(x, True, base=base2)
-    start = math.log(pol['bottom'],base2) + pol['top']
+    start = (math.log(pol['bottom'],base2) + pol['top'])
     for i in range(k-pol["height"]-1): start = math.log(start,base2)+1
     if arr_len == (k + 1): return correct(tofloat(hyper_log(x[:k], base2, k)) + x[k])
     if arr_len == (k + 2): return correct([0] + x[1:(k+1)] + [x[k + 1] - 1])
@@ -1363,6 +1389,7 @@ def arrow_format(x):
     if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
     return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 bot.run(token)
+
 
 
 
