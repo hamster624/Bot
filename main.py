@@ -690,9 +690,9 @@ def log(x):
     if len(arr) > 3: return correct(arr)
     return correct(arr)
 
-def slog(x, base): return hyper_log(x, base, 2)
-def plog(x, base): return hyper_log(x, base, 3)
-def hlog(x, base): return hyper_log(x, base, 4)
+def slog(x, base=10): return hyper_log(x, base, 2)
+def plog(x, base=10): return hyper_log(x, base, 3)
+def hlog(x, base=10): return hyper_log(x, base, 4)
 # Optimized to oblivion but now i barely understand what i did here. On a lenght of 100 elements array with random ints previous version took 0.0925163 seconds while now its only 0.0004117 seconds or on 1000 lenght its 25.8783556 seconds to 0.0015992 seconds so readable code != speed
 def hyper_log(x, base2=10, k=1):
     x = correct(x, base2)
@@ -1363,6 +1363,7 @@ def arrow_format(x):
     if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
     return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 bot.run(token)
+
 
 
 
