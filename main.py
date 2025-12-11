@@ -1001,7 +1001,6 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     if lt(base, 4): arro = 295
     elif lt(base, 5): arro = 132
     elif lt(base, 7): arro = 100
-    elif lt(base, 10): arro = 80
     if gt(q, arro):
         r = tofloat2(q)
         result = [0, 0, 0]
@@ -1354,6 +1353,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
