@@ -988,6 +988,7 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     n_float = tofloat2(n)
     t = correct(base)
     n_corr = correct(n)
+    if lte(n_corr, 1): return pow(base, n)
     if gt(q, 20):
         if base_float == None or n_float == None:
             return maximum(maximum(t, n_corr), arrow(10, q, 10))
@@ -995,7 +996,7 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     if gt(q, MAX_SAFE_INT):
         return [q[0], q[1], q[2]+1]
     if lt(q, [0, 0]): raise ValueError("n must be >= 0")
-    arro = 70
+    arro = 100
     if lt(base, 3.1): base = 3.1
     if lt(base, 4): arro = 295
     elif lt(base, 5): arro = 132
@@ -1353,6 +1354,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
