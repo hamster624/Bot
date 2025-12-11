@@ -1026,6 +1026,11 @@ def expansion(a, b):
         if _is_int_like(a) != True: raise ValueError("1st expansion number must be an integer")
     if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
     if b == None: raise OverflowError("2nd expansions number is too large to compute")
+    if b == 1: return a
+    if eq(a, 1): return [[0, 1], 0, 0]
+    if eq(a, 2): return [[0, 4], 0, 0]
+    if b == 2:
+        if eq(a,2): return [[0, 4], 0, 0]
     if a[0][0] == 1 or b < 0: raise ValueError("Expansion undefined for negative numbers")
     result = [0, 0, b-2]
     if gt(a, MAX_SAFE_INT): result[2] += 1
@@ -1353,6 +1358,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
