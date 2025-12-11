@@ -19,7 +19,7 @@ log_channel_id = None
 log_channels = {}
 
 _executor = ThreadPoolExecutor(max_workers=4)
-EVAL_TIMEOUT = 0.1
+EVAL_TIMEOUT = 0.5
 # ---------------------
 # Flask Keep-Alive
 # ---------------------
@@ -238,7 +238,7 @@ async def calc(ctx, *, expression: str):
         try:
             value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
-            await ctx.reply("⏱ Took too long (>0.1s) — skipped.", mention_author=False)
+            await ctx.reply("⏱ Took too long (>0.5s) — skipped.", mention_author=False)
             return
 
         result = formats.get(fmt_name, format)(value)
@@ -380,7 +380,7 @@ async def calc_slash(
         try:
             value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
-            await interaction.followup.send("⏱ Took too long (>0.1s) — skipped.")
+            await interaction.followup.send("⏱ Took too long (>0.5s) — skipped.")
             return
 
         result = formats[fmt_name](value)
@@ -422,8 +422,8 @@ LOG5E = 0.6213349345596118
 _log10 = math.log10
 precise_arrow = False # Would not recommend turning this to True
 arrow_precision = 44 # Would nto recommend changing this
-def correct(x, base3=10):
-    if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)], base3)
+def correct(x):
+    if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
     if isinstance(x, str):
         raise NotImplementedError("A number being a string for example hyper-e or others is not implemented yet")
@@ -454,7 +454,7 @@ def correct(x, base3=10):
             changed = False
             for i in range(len(arr)-1, 0, -1):
                 if arr[i] > MAX_SAFE_INT:
-                    L = math.log(arr[i],base3)
+                    L = _log10(arr[i])
                     if i == 1:
                         arr[1] = L
                         if len(arr) > 2: arr[2] += 1
@@ -1340,6 +1340,8 @@ def heptation(a,b): return arrow(a,5,b)
 def octation(a,b): return arrow(a,6,b)
 def nonation(a,b): return arrow(a,7,b)
 def decation(a,b): return arrow(a,8,b)
+def plog(x): return hyper_log(x, 3)
+def hlog(x): return hyper_log(x, 4)
 # Short names
 def hept(a,b): return heptation(a,b)
 def hex(a,b): return hexation(a,b)
@@ -1351,4 +1353,5 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
