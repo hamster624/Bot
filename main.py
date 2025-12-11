@@ -1022,7 +1022,7 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     return correct(res)
 def expansion(a, b):
     a, b = correct(a), int(tofloat(b))
-    if gt(a, MAX_SAFE_INT):
+    if lt(a, MAX_SAFE_INT):
         if _is_int_like(a) != True: raise ValueError("1st expansion number must be an integer")
     if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
     if b == None: raise OverflowError("2nd expansions number is too large to compute")
@@ -1033,7 +1033,7 @@ def expansion(a, b):
         if eq(a,2): return [[0, 4], 0, 0]
     if a[0][0] == 1 or b < 0: raise ValueError("Expansion undefined for negative numbers")
     result = [0, 0, b-2]
-    if gt(a, MAX_SAFE_INT): result[2] += 1
+    if gt(a, MAX_SAFE_INT): result[2] += 1+a[2]
     result[:2] = arrow(a, a, a)[:2]
     return result
 def logbase(a,b):
@@ -1102,8 +1102,8 @@ def format(num, decimals=decimals, small=False):
         if gte(num_correct, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + format(n_val, decimals)
-    elif num_correct[2] != 0 and num_correct[2] < 5: return "J" * num_correct[2] + format(num_correct[:2] + [0])
-    elif num_correct[2] != 0 and num_correct[2] >= 5:
+    elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + format(num_correct[:2] + [0])
+    elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
         if lt(n, [0, 10000000000, 8]): return format(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + comma_format(num_correct[2]+1)
         if lt(n, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return format(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E, precision4) + "K" + comma_format(num_correct[2]+1)
@@ -1315,8 +1315,8 @@ def suffix(num, small=False):
         if gte(num_correct, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + suffix(n_val, decimals)
-    elif num_correct[2] != 0 and num_correct[2] < 5: return "J" * num_correct[2] + suffix(num_correct[:2] + [0])
-    elif num_correct[2] != 0 and num_correct[2] >= 5:
+    elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + suffix(num_correct[:2] + [0])
+    elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
         if lt(n, [0, 10000000000, 8]): return suffix(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + suffix(num_correct[2]+1)
         if lt(n, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return suffix(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E, precision4) + "K" + suffix(num_correct[2]+1)
@@ -1358,6 +1358,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
