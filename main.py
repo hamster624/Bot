@@ -679,8 +679,8 @@ def lambertw(x):
     if X[1] != 0 or X[2] != 0: return X
     x = x[0]
     if lt(X, [1, 0.3678794411714423]): raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
-    if eq(X, 0): return [0, 0]
-    if eq(X, 1): return [0, 0.5671432904097839]
+    if eq(X, 0): return [[0, 0], 0, 0]
+    if eq(X, 1): return [[0, 0.5671432904097839], 0, 0]
     r = tofloat(X)
     if r is not None: return correct(_lambertw_float(r))
     L1 = ln(X)
@@ -921,10 +921,12 @@ def tetration(a, r, do=False):
     return correct([0, end, y_floor])
 def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
     r = tofloat2(r)
+    t = correct(t)
     if eq(r, 0): return multiply(t, n)
     if eq(r, 1): return power(t, n)
     if eq(r, 2): return tetration(t, n, do=True)
-    if eq(t,2) and eq(n,2): return [0, 4]
+    if eq(t,2) and eq(n,2): return [[0, 4], 0, 0]
+    if eq(t, 143): t = 143.0000000000001 # If i dont do this the code never stops
     s = tofloat2(n)
     s_t = tofloat2(t)
     if prec == False and s != None and lt(n,2) and s_t != None and done == False:
@@ -953,7 +955,6 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
             arr_res[-1] = val
         else: arr_res[-1] = 1
         return correct(arr_res)
-
     thr_r = [0, MAX_SAFE_INT, 1]
 
     if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
@@ -1022,6 +1023,8 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     return correct(res)
 def expansion(a, b):
     a, b = correct(a), int(tofloat(b))
+    if b == 0: raise ValueError("2nd expansion number can't be 0")
+    if eq(a,0): return [[0, 0], 0, 0]
     if lt(a, MAX_SAFE_INT):
         if _is_int_like(a) != True: raise ValueError("1st expansion number must be an integer")
     if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
@@ -1103,6 +1106,7 @@ def format(num, decimals=decimals, small=False):
             n_val += 1
         return "H" + format(n_val, decimals)
     elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + format(num_correct[:2] + [0])
+    elif num_correct[2] >= MAX_SAFE_INT: return "K" + format(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
         if lt(n, [0, 10000000000, 8]): return format(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + comma_format(num_correct[2]+1)
@@ -1316,6 +1320,7 @@ def suffix(num, small=False):
             n_val += 1
         return "H" + suffix(n_val, decimals)
     elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + suffix(num_correct[:2] + [0])
+    elif num_correct[2] >= MAX_SAFE_INT: return "K" + format(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
         if lt(n, [0, 10000000000, 8]): return suffix(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + suffix(num_correct[2]+1)
@@ -1358,6 +1363,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
