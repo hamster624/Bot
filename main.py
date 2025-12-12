@@ -1022,13 +1022,14 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     res = _arrow(t, q, n_corr, a_arg, prec)
     return correct(res)
 def expansion(a, b):
-    a, b = correct(a), int(tofloat(b))
+    a, b = correct(a), tofloat(b)
+    if b == None: raise OverflowError("2nd expansions number is too large to compute")
+    if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
     if b == 0: raise ValueError("2nd expansion number can't be 0")
+    b = int(b)
     if eq(a,0): return [[0, 0], 0, 0]
     if lt(a, MAX_SAFE_INT):
         if _is_int_like(a) != True: raise ValueError("1st expansion number must be an integer")
-    if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
-    if b == None: raise OverflowError("2nd expansions number is too large to compute")
     if b == 1: return a
     if eq(a, 1): return [[0, 1], 0, 0]
     if eq(a, 2): return [[0, 4], 0, 0]
@@ -1363,6 +1364,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
