@@ -398,7 +398,7 @@ async def calc_slash(
 import math
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -426,11 +426,13 @@ def correct(x):
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
     if isinstance(x, str):
-        raise NotImplementedError("A number being a string for example hyper-e or others is not implemented yet")
+        try: x =correct(float(x))
+        except: pass
         s = x.strip()
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
         if any(c in "}^)" for c in s): return fromstring(s)
+        raise NotImplementedError("Can't convert the format you input")
         return fromformat(s)
 
     if isinstance(x, list):
@@ -497,8 +499,7 @@ def correct(x):
             arr = [0, math.log10(x[1]), 1]
             x[1] = 0
             x[2] += 1
-        if x[2] != 0 and len(arr) == 2:
-            raise ValueError("If layer is more than 0 and array is less than 2^53-1 its undefined")
+        if x[2] != 0 and len(arr) == 2: raise ValueError("If layer is more than 0 and array is less than 2^53-1 its undefined")
         return [arr] + x[1:]
     raise TypeError("Unsupported type for correct")
 
@@ -604,6 +605,8 @@ def regular_format(num, precision):
 def compare(a, b):
     A = correct(a)
     B = correct(b)
+    if isinstance(A[2], list): return compare(A[2], B[2])
+    if isinstance(B[2], list): return compare(A[2], B[2])
     if A[2] != B[2]: return 1 if A[2] > B[2] else -1
     if A[1] != B[1]: return 1 if A[1] > B[1] else -1
     if A[2] == B[2] and A[1] == B[1]:
@@ -770,7 +773,7 @@ def add(a, b):
     if len(a) == 3 or len(b) == 3:
         if (len(a) > 2 and a[2] > 1) or (len(b) > 2 and b[2] > 1): return maximum(a, b)
     if len(a) == 2 and len(b) == 2: return correct([0, tofloat(a) + tofloat(b)])
-    loga = tofloat(log(a))
+    loga = tofloat(log(maximum(a,[[0,1], 0, 0])))
     logb = tofloat(log(b))
     M = max(loga, logb)
     m = min(loga, logb)
@@ -1022,7 +1025,11 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     res = _arrow(t, q, n_corr, a_arg, prec)
     return correct(res)
 def expansion(a, b):
-    a, b = correct(a), tofloat(b)
+    a, b = correct(a), correct(b)
+    float_b = tofloat(b)
+    if float_b == None:
+        return [[0, 10000000000, 1]] + [0] + [add(a[2], b)]
+    b=float_b
     if b == None: raise OverflowError("2nd expansions number is too large to compute")
     if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
     if b == 0: raise ValueError("2nd expansion number can't be 0")
@@ -1036,7 +1043,7 @@ def expansion(a, b):
     if b == 2:
         if eq(a,2): return [[0, 4], 0, 0]
     if a[0][0] == 1 or b < 0: raise ValueError("Expansion undefined for negative numbers")
-    result = [0, 0, b-2]
+    result = [0, 0, float(b-2)]
     if gt(a, MAX_SAFE_INT): result[2] += 1+a[2]
     result[:2] = arrow(a, a, a)[:2]
     return result
@@ -1106,8 +1113,8 @@ def format(num, decimals=decimals, small=False):
         if gte(num_correct, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + format(n_val, decimals)
+    elif gte(num_correct[2], MAX_SAFE_INT): return "K" + format(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + format(num_correct[:2] + [0])
-    elif num_correct[2] >= MAX_SAFE_INT: return "K" + format(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
         if lt(n, [0, 10000000000, 8]): return format(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + comma_format(num_correct[2]+1)
@@ -1134,7 +1141,7 @@ def format(num, decimals=decimals, small=False):
 def hyper_e(x):
     arr = correct(x)
     sign = "-" if arr[0][0] == 1 else ""
-    if arr[2] != 0: raise NotImplementedError("Hyper-e not implemented for numbers above 10{2^53-1}10")
+    if arr[2] != 0: raise NotImplementedError("Hyper-e not implemented for numbers above 10{9007199254740991}10")
     if arr[1] != 0: return sign + "E10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1])
     arr = arr[0]
     sign = "-" if arr[0] == 1 else ""
@@ -1145,16 +1152,17 @@ def hyper_e(x):
 def string(arr, top=True):
     arr = correct(arr)
     sign = "-" if arr[0][0] == 1 and top else ""
+    if gte(arr[2], MAX_SAFE_INT): return "K" + string(arr[2])
     if arr[2] != 0:
         if arr[2] >=5: return "J^" + str(int(arr[2])) + " " + string(arr[:2] + [0])
         return "J" * arr[2] + string(arr[:2] + [0])
     if arr[1] != 0:
         result = ""
         amount = 1
-        for i in range(len(arr[0])-6, len(arr[0])):
-            result += "(10{" + str(arr[1]-amount) + "})^" + str(arr[0][i]) + " "
+        for i in range(len(arr[0])-9, len(arr[0])):
+            result += "(10{" + str(arr[1]-amount) + "})^" + str(arr[0][-amount]) + " "
             amount += 1
-        return result +"10"
+        return result +"10000000000"
     arr = arr[0]
     if len(arr) == 2: return f"{sign}{arr[1]}"
     e_count = arr[2]
@@ -1320,8 +1328,8 @@ def suffix(num, small=False):
         if gte(num_correct, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + suffix(n_val, decimals)
+    elif gte(num_correct[2], MAX_SAFE_INT): return "K" + suffix(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + suffix(num_correct[:2] + [0])
-    elif num_correct[2] >= MAX_SAFE_INT: return "K" + format(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
         if lt(n, [0, 10000000000, 8]): return suffix(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + suffix(num_correct[2]+1)
@@ -1345,6 +1353,98 @@ def suffix(num, small=False):
         pol = polarize(n, True)
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + suffix(pol['height'])
+def from_hyper_e(x):
+    if "##" in x: raise NotImplementedError("If you are trying to convert a hyper_e and it has ## in it, then it's not implemented yet.")
+    if not x.lstrip('-').startswith('E'): raise ValueError("Not a hyper_e string")
+    sign = int(x.startswith('-'))
+    nums = [int(n) for n in x.lstrip('-E').replace('#', ',').split(',')]
+    if len(nums) > 3: nums[2:] = [v - 1 for v in nums[2:]]
+    return correct([sign] + nums)
+def count_repeating(s, target=None):
+    if not s:
+        return 0
+    if target is None:
+        target = s[0]
+    
+    count = 0
+    for ch in s:
+        if ch == target:
+            count += 1
+        else:
+            break
+    return count
+# Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent ~3h for this trash
+def fromstring(x, done=False):
+    if x.startswith("K"):
+        return [[0, 10000000000, 1]] + [0, fromstring(x.removeprefix("K"))]
+    if x.startswith("J^"):
+        x = x.strip("J^")
+        return fromstring(x.split(" ", 1)[1])[:2] + [float(x.split(" ", 1)[0])]
+    if x.startswith("J"): return fromstring(x.strip("J"))[:2] + [count_repeating(x)]
+    if x.startswith("(10"):
+        size = x.strip("(10")
+        size = count_repeating(size)
+    if x.startswith("(10{"):
+        size = x.strip("(10{")
+        after = size.split("})^", 1)[0]
+        size = int(after.split(None, 1)[0])
+        if size > 10 and done==False:
+            result = fromstring(x, done=True)
+            return [result[0], size+1, result[2]]
+    if x.startswith("10{"):
+        size = x.strip("10").strip("{")
+        before, after = size.split("}", 1)
+        size = int(before)
+    if x.startswith("10^"):
+        size = x.strip("10")
+        size = count_repeating(size)
+    if x.startswith("e"): size = 1
+    array = [0] * (size+3)
+    if x.startswith("-"): 
+        array[0] = 1
+        x = x.strip("-")
+    def logic(x, amount=size+1, gap=0):
+        try:  array[1] = float(x)
+        except: pass
+        if x.startswith("(10^"):
+            x2 = x.strip("(10")
+            count = count_repeating(x2)
+            after = x.split(")^", 1)[1]
+            num = after.split(None, 1)[0]
+            array[count + 1] = int(num)
+            before, after = x.split(" ", 1)
+            x = after
+            logic(x, amount-1)
+        if x.startswith("10^"):
+           lst = list(x)
+           x =  x.strip("10")
+           count = count_repeating(x)
+           array[count +1] = 1
+           x= "".join(lst[2+count:])
+           logic(x, amount-1)
+        if x.startswith("(10{"):
+            x = x.strip("(10{")
+            before, after = x.split("})^", 1)
+            num = after.split(None, 1)[0]
+            if gap == 0: array[amount] = int(num)
+            else: array[amount-(gap-int(before))+1] = int(num)
+            gap = before
+            before, after = x.split(" ", 1)
+            x = after
+            logic(x, amount-1, gap=int(before.split("})^")[0]))
+        if x.startswith("10{"):
+            x = x.removeprefix("10{")
+            before, after = x.split("}", 1)
+            array[int(before) + 1] = 1
+            x = after
+            logic(x, amount-1)
+        if x.startswith("e"):
+            e = count_repeating(x)
+            array[2] = e
+            array[1] = float(x[x.rfind('e')+1:])
+    logic(x)
+    if array[1] == 0: array[1] = 10000000000
+    return correct(array)
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
 def heptation(a,b): return arrow(a,5,b)
@@ -1364,6 +1464,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
