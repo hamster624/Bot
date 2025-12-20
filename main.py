@@ -431,7 +431,7 @@ def correct(x):
         s = x.strip()
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
-        if any(c in "}^)" for c in s): return fromstring(s)
+        if any(c in "}^)e" for c in s): return fromstring(s)
         raise NotImplementedError("Can't convert the format you input")
         return fromformat(s)
 
@@ -1027,22 +1027,20 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
 def expansion(a, b):
     a, b = correct(a), correct(b)
     float_b = tofloat(b)
-    if float_b == None:
-        return [[0, 10000000000, 1]] + [0] + [add(a[2], b)]
+    if a[0][0] == 1 or b[0][0] == 1: raise ValueError("Expansion undefined for negative numbers")
+    if eq(b, 0): raise ValueError("2nd expansion number can't be 0")
+    if eq(a, 1): return [[0, 1], 0, 0]
+    if eq(a, 2): return [[0, 4], 0, 0]
+    if eq(a, 0): return [[0, 0], 0, 0]
+    if float_b == None: return [[0, 10000000000, 1]] + [0] + [add(a[2], b)]
     b=float_b
-    if b == None: raise OverflowError("2nd expansions number is too large to compute")
     if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
-    if b == 0: raise ValueError("2nd expansion number can't be 0")
     b = int(b)
-    if eq(a,0): return [[0, 0], 0, 0]
     if lt(a, MAX_SAFE_INT):
         if _is_int_like(a) != True: raise ValueError("1st expansion number must be an integer")
     if b == 1: return a
-    if eq(a, 1): return [[0, 1], 0, 0]
-    if eq(a, 2): return [[0, 4], 0, 0]
     if b == 2:
         if eq(a,2): return [[0, 4], 0, 0]
-    if a[0][0] == 1 or b < 0: raise ValueError("Expansion undefined for negative numbers")
     result = [0, 0, float(b-2)]
     if gt(a, MAX_SAFE_INT): result[2] += 1+a[2]
     result[:2] = arrow(a, a, a)[:2]
@@ -1464,6 +1462,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
