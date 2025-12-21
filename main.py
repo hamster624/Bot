@@ -398,7 +398,7 @@ async def calc_slash(
 import math
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -885,7 +885,9 @@ def tetration(a, r, do=False):
         if eq(r, [[1, 1], 0, 0]): raise ValueError("1^^(-1) is undefined")
         return [[0, 1], 0, 0]
     if gt(r,[0,1,1,MAX_SAFE_INT]) or gt(a,[0, 1,1,1,MAX_SAFE_INT]): return maximum(a,r)
-    if gte(r,MAX_SAFE_INT) and lte(r,[0, 1,MAX_SAFE_INT]): return correct(add(slog(a)[0], r)[0] + [1])
+    if gte(r,MAX_SAFE_INT) and lte(r,[0, 1,MAX_SAFE_INT]):
+        if do == True: return add(slog(a)[0], r)[0] + [1]
+        return correct(add(slog(a)[0], r)[0] + [1])
     if gt(r,[0, 1,MAX_SAFE_INT]) or gt(a,[0, 1,1,MAX_SAFE_INT]):
         q = r[:3] + [(r[3] + 1)]
         return maximum(q,a)
@@ -1462,6 +1464,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
