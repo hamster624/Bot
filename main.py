@@ -90,8 +90,8 @@ async def guide(ctx):
         await log_channel.send(
             f"[!guide] {ctx.author} (ID: {ctx.author.id}) in {location}"
         )
-    formats = ["format","array","hyper_e","suffix", "string"]
-    operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+    formats = ["format","array","hyper_e","suffix", "string", "arrow_format"]
+    operations = ["multiexpansion", "expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog (penta-log)", "hlog (hexa-log)", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
@@ -104,7 +104,7 @@ async def guide(ctx):
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
     help_message += "Hyper_log(num, base, height) lets you set the height of the number you log. Example: hyper_log(1000, 10, 3) is penta-log base 10 of 1000 because the height of 3 is pentation (^^^). For slog and hlog the base is the 2nd input.\n"
     help_message += "Usage: `!calc <expression> [format]`\n"
-    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' ') and the '1F10' format. **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
+    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' '). **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
     await ctx.send(help_message)
 def _eval_in_subprocess(expr: str, safe_globals: dict, q: mp.Queue):
     try:
@@ -165,6 +165,7 @@ async def calc(ctx, *, expression: str):
         "hyper_e": hyper_e,
         "suffix": suffix,
         "array": correct,
+        "arrow_format": arrow_format,
     }
 
     try:
@@ -202,6 +203,7 @@ async def calc(ctx, *, expression: str):
             "hept": hept,
             "arrow": arrow,
             "expansion": expansion,
+            "multiexpansion": multiexpansion,
             "fact": fact,
             "factorial": factorial,
             "gamma": gamma,
@@ -234,7 +236,6 @@ async def calc(ctx, *, expression: str):
             "logbase": logbase
         }
 
-        # ---- Evaluate ----
         try:
             value, elapsed = await safe_eval_process(expr, safe_globals, timeout=EVAL_TIMEOUT)
         except TimeoutError:
@@ -266,9 +267,9 @@ async def guide_slash(interaction: discord.Interaction):
             f"[/guide] {interaction.user} (ID: {interaction.user.id}) "
             f"in {location}"
         )
-    formats = ["format","array","hyper_e","suffix", "string"]
-    operations = ["arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
-                  "log", "ln", "logbase", "slog", "plog", "hlog", "hyper_log", "lambertw",
+    formats = ["format","array","hyper_e","suffix", "string", "arrow_format"]
+    operations = ["multiexpansion", "expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+                  "log", "ln", "logbase", "slog", "plog (penta-log)", "hlog (hexa-log)", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
                   "eq", "lt", "gt", "gte", "lte", "min", "max",
@@ -280,7 +281,7 @@ async def guide_slash(interaction: discord.Interaction):
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
     help_message += "Hyper_log(num, base, height) lets you set the height of the number you log. Example: hyper_log(1000, 10, 3) is penta-log base 10 of 1000 because the height of 3 is pentation (^^^). For slog and hlog the base is the 2nd input.\n"
     help_message += "Usage: `/calc <expression> [format]`\n"
-    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' ') and the '1F10' format. **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
+    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' '). **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
     await interaction.response.send_message(help_message)
 
 # ---------------------
@@ -314,6 +315,7 @@ async def calc_slash(
         "hyper_e": hyper_e,
         "suffix": suffix,
         "array": correct,
+        "arrow_format": arrow_format,
     }
 
     fmt_name = fmt.lower()
@@ -345,6 +347,7 @@ async def calc_slash(
             "hept": hept,
             "arrow": arrow,
             "expansion": expansion,
+            "multiexpansion": multiexpansion,
             "fact": fact,
             "factorial": factorial,
             "gamma": gamma,
@@ -1464,6 +1467,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
