@@ -1065,7 +1065,7 @@ def format(num, decimals=decimals, small=False):
         return "1/" + format(inv, decimals)
     elif lt(num_correct, 1): return regular_format(n, decimals + (2 if small else 0))
     elif lt(num_correct, 1000): return regular_format(n, decimals)
-    elif lt(num_correct, 1e9): return comma_format(n)
+    elif lt(num_correct, MAX_SAFE_INT): return comma_format(n)
     elif lt(num_correct, [0, 10000000000, 3]):
         bottom = n[1]
         rep = n[2] - 1
@@ -1276,7 +1276,7 @@ def suffix(num, small=False):
         return "1/" + _suffix(inv)
     elif lt(num_correct, 1): return regular_format(n, decimals + (2 if small else 0))
     elif lt(num_correct, 1000): return regular_format(n, decimals)
-    elif lt(num_correct, 1e9): return _suffix(n)
+    elif lt(num_correct, MAX_SAFE_INT): return _suffix(n)
     elif lt(num_correct, [0, max_suffix, 1]): return _suffix(n)
     elif lt(num_correct, [0, max_suffix, 2]):
         bottom = n[1]
@@ -1318,7 +1318,7 @@ def suffix(num, small=False):
         n_val = n[2] + 1
         if gte(num_correct, [0, 10, n_val]):
             n_val += 1
-        return "F" + format(n_val, decimals)
+        return "F" + suffix(n_val, decimals)
     elif lt(num_correct, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + _suffix(pol['top'], 0)
     elif lt(num_correct, [0, 10000000000, 8, 8, 3]):
         rep = n[4]
@@ -1530,5 +1530,6 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
