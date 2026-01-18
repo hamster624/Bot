@@ -14,10 +14,6 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing as mp
 import traceback
-OWNER_ID = 715212498109726771 # Yup thats my id
-log_channel_id = None
-log_channels = {}
-
 _executor = ThreadPoolExecutor(max_workers=4)
 EVAL_TIMEOUT = 0.5
 # ---------------------
@@ -143,17 +139,6 @@ async def safe_eval_process(expr: str, safe_globals: dict, timeout: float = EVAL
         raise
     except Exception:
         raise
-@bot.command()
-async def setlogchannel(ctx, channel: discord.TextChannel):
-    """Sets the log channel for all calc logs (owner-only)."""
-    global log_channel_id
-    if ctx.author.id != OWNER_ID:
-        await ctx.send("🚫 Only the bot owner can set the log channel.")
-        return
-
-    log_channel_id = channel.id
-    await ctx.send(f"✅ Log channel set to {channel.mention} for all servers and DMs.")
-
 @bot.command()
 async def calc(ctx, *, expression: str):
     global log_channel_id
@@ -1549,6 +1534,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
