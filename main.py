@@ -68,26 +68,8 @@ async def on_ready():
 # ---------------------
 @bot.command()
 async def guide(ctx):
-    global log_channel_id
-    log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
-    if ctx.guild is None:
-        if isinstance(ctx.channel, discord.PartialMessageable):
-            channel_name = getattr(ctx.channel, "name", "unknown")
-            location = f"#{channel_name} (hidden – bot not a member)"
-        else:
-            location = "DMs"
-    else:
-        location = f"#{ctx.channel.name} ({ctx.guild.name})"
-
-    # -------------------------------------------------------
-    # Logging
-    # -------------------------------------------------------
-    if log_channel:
-        await log_channel.send(
-            f"[!guide] {ctx.author} (ID: {ctx.author.id}) in {location}"
-        )
     formats = ["format","array","hyper_e","suffix", "string", "arrow_format"]
-    operations = ["multiexpansion", "expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+    operations = ["expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog (penta-log)", "hlog (hexa-log)", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
@@ -141,9 +123,6 @@ async def safe_eval_process(expr: str, safe_globals: dict, timeout: float = EVAL
         raise
 @bot.command()
 async def calc(ctx, *, expression: str):
-    global log_channel_id
-    log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
-
     formats = {
         "format": format,
         "string": string,
@@ -163,12 +142,6 @@ async def calc(ctx, *, expression: str):
             tokens = tokens[:-1]
 
         expr = " ".join(tokens).replace("^", "**")
-
-        if ctx.guild is None:
-            location = "Server (hidden – bot not a member)" if isinstance(ctx.channel, discord.PartialMessageable) else "DMs"
-        else:
-            location = f"#{ctx.channel.name} ({ctx.guild.name})"
-
         # ---- Logging ----
         if log_channel:
             await log_channel.send(
@@ -188,7 +161,6 @@ async def calc(ctx, *, expression: str):
             "hept": hept,
             "arrow": arrow,
             "expansion": expansion,
-            "multiexpansion": multiexpansion,
             "fact": fact,
             "factorial": factorial,
             "gamma": gamma,
@@ -242,18 +214,8 @@ async def calc(ctx, *, expression: str):
 # ---------------------
 @bot.tree.command(name="guide", description="Shows help for the calculator")
 async def guide_slash(interaction: discord.Interaction):
-    global log_channel_id
-    log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
-
-    if interaction.guild is None:location = "Server (hidden – bot not a member)" if isinstance(interaction.channel, discord.PartialMessageable) else "DMs"
-    else:location = f"#{interaction.channel.name} ({interaction.guild.name})"
-    if log_channel:
-        await log_channel.send(
-            f"[/guide] {interaction.user} (ID: {interaction.user.id}) "
-            f"in {location}"
-        )
     formats = ["format","array","hyper_e","suffix", "string", "arrow_format"]
-    operations = ["multiexpansion", "expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+    operations = ["expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog (penta-log)", "hlog (hexa-log)", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
@@ -282,17 +244,6 @@ async def calc_slash(
     expression: str,
     fmt: str = "format"
 ):
-    global log_channel_id
-    log_channel = bot.get_channel(log_channel_id) if log_channel_id else None
-
-    if interaction.guild is None:
-        if isinstance(interaction.channel, discord.PartialMessageable):
-            channel_name = getattr(interaction.channel, "name", "unknown")
-            location = f"#{channel_name} (hidden – bot not a member)"
-        else:
-            location = "DMs"
-    else:
-        location = f"#{interaction.channel.name} ({interaction.guild.name})"
 
     formats = {
         "format": format,
@@ -332,7 +283,6 @@ async def calc_slash(
             "hept": hept,
             "arrow": arrow,
             "expansion": expansion,
-            "multiexpansion": multiexpansion,
             "fact": fact,
             "factorial": factorial,
             "gamma": gamma,
@@ -410,27 +360,26 @@ LOG5E = 0.6213349345596118
 _log10 = math.log10
 precise_arrow = False # Would not recommend turning this to True
 arrow_precision = 44 # Would nto recommend changing this
-grahams_number = [[0, 3638334640023.7783, 7625597484984, 0, 1], 0, 63, 0] # This variable is unused and is only here just to show how much the grahams number is
+grahams_number = [[0, 3638334640023.7783, 7625597484984, 0, 1], 0, 63] # This variable is unused and is only here just to show how much the grahams number is
 def correct(x):
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
     if isinstance(x, str):
-        try: return correct(float(x))
+        try: x =correct(float(x))
         except: pass
         s = x.strip()
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
         if any(c in "}^)e" for c in s): return fromstring(s)
-        raise NotImplementedError("Can't convert the string you input")
+        raise NotImplementedError("Can't convert the format you input")
         return fromformat(s)
 
     if isinstance(x, list):
         try: x[0][0]
-        except: x = [x] + [0, 0, 0]
-        if len(x) == 3: x.append(0)
+        except: x = [x] + [0, 0]
         arr = x[0]
         arr = arr[:]
-        if not arr: return [[0, 0], 0, 0, 0]
+        if not arr: return [[0, 0], 0, 0]
         if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
         if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
 
@@ -486,7 +435,7 @@ def correct(x):
             mid = [8] * num_eight
             arr = arr[:2] + mid + arr[i:]
         if x[1] > MAX_SAFE_INT:
-            arr = [0, _log10(x[1]), 1]
+            arr = [0, math.log10(x[1]), 1]
             x[1] = 0
             x[2] += 1
         if x[2] != 0 and len(arr) == 2: raise ValueError("If layer is more than 0 and array is less than 2^53-1 its undefined")
@@ -544,6 +493,7 @@ def set_to_zero(x, y):
 def array_search(x, y):
     if len(x) <= y: return 0
     return x[y]
+
 def comma_format(num, precision=0):
     a = correct(num)[0]
     if len(a) == 2:
@@ -563,10 +513,11 @@ def regular_format(num, precision):
 def compare(a, b):
     A = correct(a)
     B = correct(b)
-    if A[3] != B[3]: return 1 if A[3] > B[3] else -1
+    if isinstance(A[2], list): return compare(A[2], B[2])
+    if isinstance(B[2], list): return compare(A[2], B[2])
     if A[2] != B[2]: return 1 if A[2] > B[2] else -1
     if A[1] != B[1]: return 1 if A[1] > B[1] else -1
-    if A[3] == B[3] and A[2] == B[2] and A[1] == B[1]:
+    if A[2] == B[2] and A[1] == B[1]:
         A = A[0]
         B = B[0]
     if A[0] != B[0]: return -1 if A[0] == 1 else 1
@@ -604,8 +555,8 @@ def neg(x):
 def tofloat(a):
     a = correct(a)
     if a[0][0] == 1:
-        if gt(neg(a), [[0, 308.25, 1], 0, 0, 0]): return None
-    if gt(a, [[0, 308.25, 1], 0, 0, 0]): return None
+        if gt(neg(a), [0, 308.25, 1]): return None
+    if gt(a, [0, 308.25, 1]): return None
     a = a[0]
     val = a[1]
     if len(a) == 3: val = 10**val
@@ -613,7 +564,7 @@ def tofloat(a):
 
 def tofloat2(a):
     a = correct(a)
-    if a[1] != 0 or a[2] != 0 or a[3] != 0: return None
+    if a[1] != 0 or a[2] != 0: return None
     a = a[0]
     if not len(a) == 2: return None
     return -a[1] if a[0] == 1 else a[1]
@@ -636,11 +587,11 @@ def _lambertw_float(r, tol=1e-12, max_iter=100):
 
 def lambertw(x):
     X = correct(x)
-    if X[1] != 0 or X[2] != 0 or X[3] != 0: return X
+    if X[1] != 0 or X[2] != 0: return X
     x = x[0]
     if lt(X, [1, 0.3678794411714423]): raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
-    if eq(X, 0): return [[0, 0], 0, 0, 0]
-    if eq(X, 1): return [[0, 0.5671432904097839], 0, 0, 0]
+    if eq(X, 0): return [[0, 0], 0, 0]
+    if eq(X, 1): return [[0, 0.5671432904097839], 0, 0]
     r = tofloat(X)
     if r is not None: return correct(_lambertw_float(r))
     L1 = ln(X)
@@ -651,23 +602,23 @@ def lambertw(x):
 def log(x):
     arr = correct(x)
     if arr[0][0] == 1: raise ValueError("Can't log a negative")
-    if arr[1] != 0 or arr[2] != 0 or arr[3] != 0: return arr
+    if arr[1] != 0 or arr[2] != 0: return arr
     arr = arr[0]
     len_arr = len(arr)
     if len_arr == 2: return correct(_log10(arr[1]))
-    if len_arr == 3: return correct([[0, arr[1], arr[2] - 1], 0, 0, 0])
-    if len_arr > 3: return [arr, 0, 0, 0]
-    return [arr, 0, 0, 0]
+    if len_arr == 3: return correct([[0, arr[1], arr[2] - 1], 0, 0])
+    if len_arr > 3: return [arr, 0, 0]
+    return [arr, 0, 0]
 
 def slog(x):
     arr = correct(x)
-    if arr[1] != 0 or arr[2] != 0 or arr[3] != 0: return arr
+    if arr[1] != 0 or arr[2] != 0: return arr
     arr = arr[0]
     if arr[0] == 1: raise ValueError("Can't slog a negative")
-    if lte(arr, 10): return correct(_log10(arr[1]))
-    if lte(arr, [[0, 10000000000], 0, 0]): return correct(_log10(tofloat(log(arr))) + 1)
+    if lte(arr, 10): return correct(math.log10(arr[1]))
+    if lte(arr, [[0, 10000000000], 0, 0]): return correct(math.log10(tofloat(log(arr))) + 1)
     len_arr = len(arr)
-    if len_arr < 3: return correct(_log10(tofloat(log(log(arr)))) + 2)
+    if len_arr < 3: return correct(math.log10(tofloat(log(log(arr)))) + 2)
     if len_arr == 3: return correct(tofloat(slog(arr[:2])) + arr[2])
     if len_arr == 4: return correct(0, arr[1:3] + [arr[4] - 1])
     return [arr, 0, 0]
@@ -675,7 +626,7 @@ def hyper_log(x, k):
     k = tofloat2(k)
     x = correct(x)
     if k == None: raise NotImplementedError("Hyper_log logs layer is not implemented for layers being more than 2^53-1")
-    if x[2] != 0 or x[3] != 0: return x
+    if x[2] != 0: return x
     if k > 20:
         layers = 0
         if x[1] != 0: layers = x[1]
@@ -690,6 +641,7 @@ def hyper_log(x, k):
     if k == 1: return log(x)
     arr_len = len(x)
     pol = polarize(x, True)
+    print(x)
     start = _log10(pol['bottom']) + pol['top']
     for i in range(k-pol["height"]-1): start = _log10(start)+1
     if arr_len == (k + 1): return correct(tofloat(hyper_log(x[:k], k)) + x[k])
@@ -704,26 +656,26 @@ def abs_val(x):
 
 def addlayer(x, layers=1,_add=0):
     arr = correct(x)
-    if arr[1] != 0 or arr[2] != 0 or arr[3] != 0:
-        if arr[0][0] == 1: return [[0, 0], 0, 0, 0]
+    if arr[1] != 0 or arr[2] != 0:
+        if arr[0][0] == 1: return [[0, 0], 0, 0]
         return arr
     arr = arr[0]
     len_arr = len(arr)
     arr0=arr[0]
     if arr0 == 1 and len_arr == 2: return correct([0, 10**(-(arr[1]+_add))])
-    if arr0 == 1 and gt(abs_val(x), [[0, 308, 1], 0, 0, 0]): return [[0, 0], 0, 0, 0]
-    if len_arr == 2: return correct([[0, arr[1], 1], 0, 0, 0])
-    if len_arr == 3: return correct([[0, arr[1], arr[2] + layers], 0, 0, 0])
-    if len_arr > 3: return [arr, 0, 0, 0]
+    if arr0 == 1 and gt(abs_val(x), [[0, 308, 1], 0, 0]): return [[0, 0], 0, 0]
+    if len_arr == 2: return correct([[0, arr[1], 1], 0, 0])
+    if len_arr == 3: return correct([[0, arr[1], arr[2] + layers], 0, 0])
+    if len_arr > 3: return [arr, 0, 0]
     return arr
 
 def add(a, b):
     a, b = correct(a), correct(b)
-    if a[1] != 0 or a[2] != 0 or a[3] != 0: return maximum(a,b)
-    if b[1] != 0 or b[2] != 0 or b[3] != 0: return maximum(a,b)
+    if a[1] != 0 or a[2] != 0: return maximum(a,b)
+    if b[1] != 0 or b[2] != 0: return maximum(a,b)
     a = a[0]
     b = b[0]
-    if gt(a, [[0, MAX_SAFE_INT, 1], 0, 0, 0]) or gt(b, [[0, MAX_SAFE_INT, 1], 0, 0, 0]): return maximum(a,b)
+    if gt(a, [[0, MAX_SAFE_INT, 1], 0, 0]) or gt(b, [[0, MAX_SAFE_INT, 1], 0, 0]): return maximum(a,b)
     if a[0] == 1 and b[0] == 1: return neg(add(neg(a),neg(b)))
     if a[0] == 1 and b[0] == 0: return subtract(b, neg(a))
     if a[0] == 0 and b[0] == 1: return subtract(a, neg(b))
@@ -740,8 +692,8 @@ def add(a, b):
 
 def subtract(a,b):
     a, b = correct(a), correct(b)
-    if eq(a,b) and a[0] == b[0]: return [[0, 0], 0, 0, 0]
-    if gt(a, [[0, MAX_SAFE_INT, 1], 0, 0, 0]) or gt(b, [[0, MAX_SAFE_INT, 1], 0, 0, 0]):
+    if eq(a,b) and a[0] == b[0]: return [[0, 0], 0, 0]
+    if gt(a, [[0, MAX_SAFE_INT, 1], 0, 0]) or gt(b, [[0, MAX_SAFE_INT, 1], 0, 0]):
         if gt(b,a): return neg(b)
         if gt(a,b): return a
     a = a[0]
@@ -757,12 +709,12 @@ def subtract(a,b):
 def multiply(a, b):
     a = correct(a)
     b = correct(b)
-    if a[1] != 0 or a[2] != 0 or a[3] != 0: return maximum(a,b)
-    if b[1] != 0 or b[2] != 0 or b[3] != 0: return maximum(a,b)
+    if a[1] != 0 or a[2] != 0: return maximum(a,b)
+    if b[1] != 0 or b[2] != 0: return maximum(a,b)
     a = a[0]
     b = b[0]
     result_sign = a[0] ^ b[0]
-    if gt(a, [[0, 1000, 2], 0, 0, 0]) or gt(b, [[0, 1000, 2], 0, 0, 0]): return maximum(a,b)
+    if gt(a, [[0, 1000, 2], 0, 0]) or gt(b, [[0, 1000, 2], 0, 0]): return maximum(a,b)
     if len(a) == 2 and len(b) == 2:
         val = (a[1] if a[0] == 0 else -a[1]) * (b[1] if b[0] == 0 else -b[1])
         return correct([0 if val >= 0 else 1, abs(val)])
@@ -772,24 +724,21 @@ def multiply(a, b):
 def divide(a, b):
     a = correct(a)
     b = correct(b)
-    if eq(b, [[0, 0], 0, 0, 0]): raise ZeroDivisionError("Can't divide with 0")
-    if gt(maximum(a,b), [[0, MAX_SAFE_INT, 2], 0, 0, 0]): return a if gt(a,b) else 0
+    if eq(b, [[0, 0], 0, 0]): raise ZeroDivisionError("Can't divide with 0")
+    if gt(maximum(a,b), [[0, MAX_SAFE_INT, 2], 0, 0]): return a if gt(a,b) else 0
     a = a[0]
     b = b[0]
     if a[0] ^ b[0] == 1: return neg(divide(abs_val(a), abs_val(b)))
     if len(b) == 2 and len(a) == 2: return correct([0, tofloat(a) / tofloat(b)])
-    if eq(log(a), [[0, 0], 0, 0, 0]): return addlayer(subtract(a, log(b)), _add=1)
+    if eq(log(a), [[0, 0], 0, 0]): return addlayer(subtract(a, log(b)), _add=1)
     result = subtract(log(a), log(b))
     return addlayer(result)
 
 def power(a, b):
     a = correct(a)
     b = correct(b)
-    if b[0][0] == 1:
-        if b[1] != 0 or b[2] != 0 or b[3] != 0: return [[0], 0, 0, 0]
-        if a[1] != 0 or a[2] != 0 or a[3] != 0: return maximum(a,b)
-    if a[1] != 0 or a[2] != 0 or a[3] != 0: return maximum(a,b)
-    if b[1] != 0 or b[2] != 0 or b[3] != 0: return maximum(a,b)
+    if a[1] != 0 or a[2] != 0: return maximum(a,b)
+    if b[1] != 0 or b[2] != 0: return maximum(a,b)
     a = a[0]
     b = b[0]
     if b[0] == 1 and a[0] == 0: return divide(1, power(a,neg(b)))
@@ -800,7 +749,7 @@ def power(a, b):
 def factorial(n):
     n= correct(n)
     if n[0][0] == 1: raise ValueError("Can't factorial a negative")
-    if n[1] != 0 or n[2] != 0 or n[3] != 0: return n
+    if n[1] != 0 or n[2] != 0: return n
     return gamma(add(n, 1))
 
 def floor(x):
@@ -819,7 +768,8 @@ def ceil(x):
 
 def gamma(x):
     x = correct(x)
-    if x[1] != 0 or x[2] != 0 or x[3] != 0: return x
+    if x[0][0] == 1: raise ValueError("Can't factorial a negative")
+    if x[1] != 0 or x[2] != 0: return x
     x0 = x[0]
     if gt(x0, [0, MAX_SAFE_INT, 2]): return x
     if gt(x0, [0, 15.954589770191003, 1]): return exp(x)
@@ -839,24 +789,25 @@ def gamma(x):
     l += 1 / (1260 * np)
     np *= n2
     l -= 1 / (1680 * np)
-    return exp(correct(l))
+    return exp(l)
+
 def tetration(a, r, do=False):
     a = correct(a)
     r = correct(r)
-    if a[1] != 0 or a[2] != 0 or a[3] != 0: return maximum(a,r)
-    if r[1] != 0 or r[2] != 0 or r[3] != 0: return maximum(a,r)
+    if a[1] != 0 or a[2] != 0: return maximum(a,r)
+    if r[1] != 0 or r[2] != 0: return maximum(a,r)
     a = a[0]
     r = r[0]
-    if lte(r, [[1, 2], 0, 0, 0]): raise ValueError("tetr(a, r): undefined for r <= -2 on the principal branch")
+    if lte(r, [[1, 2], 0, 0]): raise ValueError("tetr(a, r): undefined for r <= -2 on the principal branch")
 
-    if eq(a, [[0, 0], 0, 0, 0]):
-        if eq(r, [[0, 0], 0, 0, 0]): raise ValueError("0^^0 is undefined")
+    if eq(a, [[0, 0], 0, 0]):
+        if eq(r, [[0, 0], 0, 0]): raise ValueError("0^^0 is undefined")
         if _is_int_like(r): return correct(0 if int(tofloat(r)) % 2 == 0 else 1)
         raise ValueError("tetr(0, r) with non-integer r is not supported")
 
     if eq(a, 1):
-        if eq(r, [[1, 1], 0, 0, 0]): raise ValueError("1^^(-1) is undefined")
-        return [[0, 1], 0, 0, 0]
+        if eq(r, [[1, 1], 0, 0]): raise ValueError("1^^(-1) is undefined")
+        return [[0, 1], 0, 0]
     if gt(r,[0,1,1,MAX_SAFE_INT]) or gt(a,[0, 1,1,1,MAX_SAFE_INT]): return maximum(a,r)
     if gte(r,MAX_SAFE_INT) and lte(r,[0, 1,MAX_SAFE_INT]):
         if do == True: return add(slog(a)[0], r)[0] + [1]
@@ -864,8 +815,8 @@ def tetration(a, r, do=False):
     if gt(r,[0, 1,MAX_SAFE_INT]) or gt(a,[0, 1,1,MAX_SAFE_INT]):
         q = r[:3] + [(r[3] + 1)]
         return maximum(q,a)
-    if eq(r, -1): return [[0, 0], 0, 0, 0]
-    if eq(r, 0): return [[0, 1], 0, 0, 0]
+    if eq(r, -1): return [[0, 0], 0, 0]
+    if eq(r, 0): return [[0, 1], 0, 0]
     if eq(r, 1): return a
     if eq(r, 2): return power(a, a)
     if lt(a, 1.444667861009766):
@@ -900,11 +851,10 @@ def tetration(a, r, do=False):
 def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
     r = tofloat2(r)
     t = correct(t)
-    n = correct(n)
     if eq(r, 0): return multiply(t, n)
     if eq(r, 1): return power(t, n)
     if eq(r, 2): return tetration(t, n, do=True)
-    if eq(t,2) and eq(n,2): return [[0, 4], 0, 0, 0]
+    if eq(t,2) and eq(n,2): return [[0, 4], 0, 0]
     if eq(t, 143): t = 143.0000000000001 # If i dont do this the code never stops
     s = tofloat2(n)
     s_t = tofloat2(t)
@@ -918,7 +868,6 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
         arrow_amount = _arrow(t,arrow_precision,n, a_arg, True, done=True)
         if eq(n,2): return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision):]
         return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
-    if gt(maximum(t, n), [0, 9007199254740991] + [8] * (r-1)): return maximum(t, n)
     if gt(t, [0, 9007199254740991] + [8] * (r-2)):
         if gt(t, [0, 9007199254740991] + [8] * (r-2)):
             a = t.copy()
@@ -929,13 +878,13 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
         while len(j) <= r: j.append(0)
         j[r] += 1
         return j
-    if r == 3 and gt(t, [0, MAX_SAFE_INT, 2]): return t[0] + [1]
     if s is None:
         arr_n = correct(n)[0]
         target_len = r + 2
         arr_res = arr_n + [0] * (target_len - len(arr_n))
         arr_res[-1] += 1
         return correct(arr_res)
+
 
     thr_r = [0, MAX_SAFE_INT, 1]
     if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
@@ -970,14 +919,13 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     n_float = tofloat2(n)
     t = correct(base)
     n_corr = correct(n)
-    if t[3] != 0 or q[3] != 0 or n_corr[3] != 0: return maximum(t, maximum(q, n_corr))
-    if lte(n_corr, [[0, 1], 0, 0, 0]): return pow(base, n)
-    if gt(q, [[0, 20], 0, 0, 0]):
+    if lte(n_corr, [[0, 1], 0, 0]): return pow(base, n)
+    if gt(q, [[0, 20], 0, 0]):
         if base_float == None or n_float == None:
             return maximum(maximum(t, n_corr), arrow(10, q, 10))
     if gt(maximum(n_corr, t), [0, 16, 1] + [0] * 17 + [1]): return maximum(n_corr, t)
     if gt(q, MAX_SAFE_INT):
-        return [q[0], q[1], q[2]+1, 0]
+        return [q[0], q[1], q[2]+1]
     if lt(q, [[0, 0], 0, 0]): raise ValueError("n must be >= 0")
     arro = 100
     if lt(base, 3.1): base = 3.1
@@ -1005,13 +953,13 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     return correct(res)
 def expansion(a, b):
     a, b = correct(a), correct(b)
-    float_b = tofloat2(b)
+    float_b = tofloat(b)
     if a[0][0] == 1 or b[0][0] == 1: raise ValueError("Expansion undefined for negative numbers")
     if eq(b, 0): raise ValueError("2nd expansion number can't be 0")
-    if eq(a, 1): return [[0, 1], 0, 0, 0]
-    if eq(a, 2): return [[0, 4], 0, 0, 0]
-    if eq(a, 0): return [[0, 0], 0, 0, 0]
-    if float_b == None: return [b[0]] + b[1:3] + [b[3]+1]
+    if eq(a, 1): return [[0, 1], 0, 0]
+    if eq(a, 2): return [[0, 4], 0, 0]
+    if eq(a, 0): return [[0, 0], 0, 0]
+    if float_b == None: return [[0, 10000000000, 1]] + [0] + [add(a[2], b)]
     b=float_b
     if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
     b = int(b)
@@ -1019,28 +967,10 @@ def expansion(a, b):
         if _is_int_like(a) != True: raise ValueError("1st expansion number must be an integer")
     if b == 1: return a
     if b == 2:
-        if eq(a,2): return [[0, 4], 0, 0, 0]
-    result = [0, 0, int(b-2), 0]
+        if eq(a,2): return [[0, 4], 0, 0]
+    result = [0, 0, float(b-2)]
     if gt(a, MAX_SAFE_INT): result[2] += 1+a[2]
     result[:2] = arrow(a, a, a)[:2]
-    return result
-def multiexpansion(a,b):
-    a, b = correct(a), tofloat(b)
-    if a[0][0] == 1 or b < 0: raise ValueError("Multi-expansion undefined for negative numbers")
-    if b == 0: raise ValueError("2nd multi-expansion number can't be 0")
-    if eq(a, 1): return [[0, 1], 0, 0, 0]
-    if eq(a, 2): return [[0, 4], 0, 0, 0]
-    if eq(a, 0): return [[0, 0], 0, 0, 0]
-    if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
-    b = int(b)
-    if lt(a, MAX_SAFE_INT):
-        if _is_int_like(a) != True: raise ValueError("1st expansion number must be an integer")
-    if b == 1: return a
-    if b == 2:
-        if eq(a,2): return [[0, 4], 0, 0, 0]
-    result = [0, 0, 0, int(b-2)]
-    if gt(a, MAX_SAFE_INT): result[3] += 1+a[3]
-    result[:3] = arrow(a, a, a)[:3]
     return result
 def logbase(a,b):
     if lte(b, [[0, 1], 0, 0]): raise ValueError("LogBase undefined for bases under or equal to 1")
@@ -1048,9 +978,9 @@ def logbase(a,b):
 def ln(a): return multiply(log(a),2.302585092994046) # log10(a)/log10(e) or log10(a)*(1/log10(e))
 def sqrt(a): return root(a,2)
 def root(a,b): 
-    if lt(b,[[0, 0], 0, 0, 0]): raise ValueError("Can't root a negative")
-    if gt(b,[[0, 0], 0, 0, 0]) and lt(b,[[0, 1], 0, 0, 0]): return power(a,divide(1,b))
-    if eq(b, [[0, 0], 0, 0, 0]): raise ValueError("Root of 0 is undefined")
+    if lt(b,[[0, 0], 0, 0]): raise ValueError("Can't root a negative")
+    if gt(b,[[0, 0], 0, 0]) and lt(b,[[0, 1], 0, 0]): return power(a,divide(1,b))
+    if eq(b, [[0, 0], 0, 0]): raise ValueError("Root of 0 is undefined")
     return addlayer(divide(log(a),b))
 def exp(x): return power(2.718281828459045, x)
 def format(num, decimals=decimals, small=False):
@@ -1082,7 +1012,7 @@ def format(num, decimals=decimals, small=False):
     elif lt(num_correct, [0, 10000000000, 8, 3]):
         rep = array_search(n, 3)
         if rep >= 1:
-            n_arr = set_to_zero(n, 2)
+            n_arr = set_to_zero(n, 3)
             return ("F" * int(rep)) + format(n_arr, decimals)
         n_val = array_search(n, 2) + 1
         if gte(num_correct, [0, 10, n_val]):
@@ -1092,7 +1022,7 @@ def format(num, decimals=decimals, small=False):
     elif lt(num_correct, [0, 10000000000, 8, 8, 3]):
         rep = array_search(n, 4)
         if rep >= 1:
-            n_arr = set_to_zero(n, 3)
+            n_arr = set_to_zero(n, 4)
             return ("G" * int(rep)) + format(n_arr, decimals)
         n_val = array_search(n, 3) + 1
         if gte(num_correct, [0, 10, 0, n_val]):
@@ -1102,28 +1032,13 @@ def format(num, decimals=decimals, small=False):
     elif lt(num_correct, [0, 10000000000, 8, 8, 8, 3]):
         rep = array_search(n, 5)
         if rep >= 1:
-            n_arr = set_to_zero(n, 4)
+            n_arr = set_to_zero(n, 5)
             return ("H" * int(rep)) + format(n_arr, decimals)
         n_val = array_search(n, 4) + 1
         if gte(num_correct, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + format(n_val, decimals)
-    elif num_correct[3] > MAX_SAFE_INT: return "L" + format(num_correct[3])
-    elif num_correct[3] != 0 and num_correct[3] < 4: return "K" * num_correct[3] + format(num_correct[:3] + [0])
-    elif num_correct[3] != 0 and num_correct[3] >= 4:
-        pol = polarize(n, True)
-        if lt(n, [0, 10000000000, 8]): return format(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "L" + comma_format(num_correct[3]+1)
-        if lt(n, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return format(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E, precision4) + "L" + comma_format(num_correct[3]+1)
-        else:
-            if num_correct[1] == 0: num_correct[1] = len(n)-1
-            nextToTopJ = num_correct[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
-            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
-            else: bottom = _log10(nextToTopJ)
-            if nextToTopJ >= 1e10: top = 2
-            else: top = 1
-            print(bottom)
-        return format(1+ _log10(_log10(bottom)+top),precision4) + "L" + comma_format(num_correct[3]+2)
-    elif num_correct[2] > MAX_SAFE_INT: return "K" + format(num_correct[2])
+    elif gte(num_correct[2], MAX_SAFE_INT): return "K" + format(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + format(num_correct[:2] + [0])
     elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
@@ -1154,11 +1069,9 @@ def hyper_e(x, use_sign=True):
     if use_sign == False: sign = ""
     if arr[1] == 0: arr[1] = len(arr[0])
     # FOR NUMBERS ABOVE 10{2^53-1}10 MAY BE INACCURATE
-    if arr[3] != 0: raise NotImplementedError("Hyper_e for numbers above 10{{1}}9007199254740991 is not implemented")
     if arr[2] != 0: return sign + "10##" + str(len(arr[0])-1) + "#" + str(arr[2]+1)
     if arr[1] >= 10: return sign + "10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1]-1)
     arr = arr[0]
-    sign = "-" if arr[0] == 1 else ""
     if len(arr) > 3:
         after = [v + 1 for v in arr[3:]]
         arr = arr[:3] + after
@@ -1166,11 +1079,9 @@ def hyper_e(x, use_sign=True):
 def string(arr, top=True):
     arr = correct(arr)
     sign = "-" if arr[0][0] == 1 and top else ""
-    if arr[3] != 0:
-        if arr[3] >=5: return "K^" + str(float(arr[3])) + " " + string(arr[:3] + [0])
-        return "K" * arr[2] + string(arr[:3] + [0])
+    if gte(arr[2], MAX_SAFE_INT): return "K" + string(arr[2])
     if arr[2] != 0:
-        if arr[2] >=5: return "J^" + str(float(arr[2])) + " " + string(arr[:2] + [0])
+        if arr[2] >=5: return "J^" + str(int(arr[2])) + " " + string(arr[:2] + [0])
         return "J" * arr[2] + string(arr[:2] + [0])
     if arr[1] != 0:
         result = ""
@@ -1343,21 +1254,7 @@ def suffix(num, small=False):
         if gte(num_correct, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + suffix(n_val, decimals)
-    elif num_correct[3] > MAX_SAFE_INT: return "L" + suffix(num_correct[3])
-    elif num_correct[3] != 0 and num_correct[3] < 4: return "K" * num_correct[3] + suffix(num_correct[:3] + [0])
-    elif num_correct[3] != 0 and num_correct[3] >= 4:
-        pol = polarize(n, True)
-        if lt(n, [0, 10000000000, 8]): return suffix(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "L" + suffix(num_correct[3]+1)
-        if lt(n, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return suffix(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E, precision4) + "L" + suffix(num_correct[3]+1)
-        else:
-            if num_correct[1] == 0: num_correct[1] = len(n)-1
-            nextToTopJ = num_correct[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
-            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
-            else: bottom = _log10(nextToTopJ)
-            if nextToTopJ >= 1e10: top = 2
-            else: top = 1
-        return suffix(1+ _log10(_log10(bottom)+top),precision4) + "L" + suffix(num_correct[3]+2)
-    elif num_correct[2] > MAX_SAFE_INT: return "K" + suffix(num_correct[2])
+    elif gte(num_correct[2], MAX_SAFE_INT): return "K" + suffix(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + suffix(num_correct[:2] + [0])
     elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
@@ -1382,50 +1279,6 @@ def suffix(num, small=False):
         pol = polarize(n, True)
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + suffix(pol['height'])
-def arrow_format(x):
-    x = correct(x)
-    x0 = x[0]
-    if x[3] != 0:
-        if x[3] > MAX_SAFE_INT: return "10{{2}}" + str(float(x[3]))
-        if x[3] < 4: return "10{{1}}" * x[3] + arrow_format(x[:3] + [0])
-        pol = polarize(x0, True)
-        if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[3]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
-        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[3]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E), 16)
-        else:
-            if x[1] == 0: x[1] = len(x0)-1
-            nextToTopJ = x[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
-            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
-            else: bottom = _log10(nextToTopJ)
-            if nextToTopJ >= 1e10: top = 2
-            else: top = 1
-        return "10{{2}}" + comma_format(x[3]+2 + _log10(1+_log10(_log10(bottom)+top)), 16)
-    if x[2] != 0:
-        if x[2] > MAX_SAFE_INT: return "10{{1}}" + str(float(x[2]))
-        if x[2] < 4: return "10{10}" * x[2] + arrow_format(x[:2] + [0])
-        pol = polarize(x0, True)
-        if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[2]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
-        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[2]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E), 16)
-        else:
-            if x[1] == 0: x[1] = len(x0)-1
-            nextToTopJ = x[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
-            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
-            else: bottom = _log10(nextToTopJ)
-            if nextToTopJ >= 1e10: top = 2
-            else: top = 1
-        return "10{{1}}" + comma_format(x[2]+2 + _log10(1+_log10(_log10(bottom)+top)), 16)
-    if x[1] != 0:
-        pol = polarize(x0, True)
-        val = _log10(pol['bottom']) + pol['top']
-        j = x[1]
-        if j > 1e9: j = comma_format(j, 6)
-        else: j = comma_format(j)
-        return "10{" + str(j) + "}" + comma_format(val, 16)
-    else:
-        if lt(x0, 1e9): return format(x0)
-        pol = polarize(x0)
-        arrow = pol['height']+1
-        if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
-        return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 def from_hyper_e(x):
     if "##" in x: raise NotImplementedError("If you are trying to convert a hyper_e and it has ## in it, then it's not implemented yet.")
     if not x.lstrip('-').startswith('E'): raise ValueError("Not a hyper_e string")
@@ -1443,10 +1296,8 @@ def count_repeating(s, target=None):
     return count
 # Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent ~3h for this trash
 def fromstring(x, done=False):
-    if x.startswith("K^"):
-        x = x.strip("K^")
-        return fromstring(x.split(" ", 1)[1])[:3] + [float(x.split(" ", 1)[0])]
-    if x.startswith("K"): return fromstring(x.strip("K"))[:3] + [count_repeating(x)]
+    if x.startswith("K"):
+        return [[0, 10000000000, 1]] + [0, fromstring(x.removeprefix("K"))]
     if x.startswith("J^"):
         x = x.strip("J^")
         return fromstring(x.split(" ", 1)[1])[:2] + [float(x.split(" ", 1)[0])]
@@ -1515,6 +1366,41 @@ def fromstring(x, done=False):
     logic(x)
     if array[1] == 0: array[1] = 10000000000
     return correct(array)
+def arrow_format(x):
+    x = correct(x)
+    x0 = x[0]
+    if x[2] != 0:
+        if x[2] > MAX_SAFE_INT: return "10{{1}}" + str(float(x[2]))
+        if x[2] < 4: return "10{10}" * x[2] + arrow_format(x[:2] + [0])
+        x0 = x[0]
+        pol = polarize(x0, True)
+        if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[2]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
+        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[2]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E))
+        else:
+            if x[1] == 0: x[1] = len(x0)-1
+            nextToTopJ = x[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
+            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
+            else: bottom = _log10(nextToTopJ)
+            if nextToTopJ >= 1e10: top = 2
+            else: top = 1
+        return "10{{1}}" + comma_format(x[2]+2 + _log10(1+_log10(_log10(bottom)+top)))
+    if x[1] != 0:
+        pol = polarize(x0, True)
+        val = _log10(pol['bottom']) + pol['top']
+        j = x[1]
+        if j > 1e9: j = comma_format(j, 6)
+        else: j = comma_format(j)
+        return "10{" + str(j) + "}" + comma_format(val)
+    else:
+        if lt(x0, 1e9): return format(x0)
+        pol = polarize(x0)
+        arrow = pol['height']+1
+        if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
+        return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
+def ssqrt(x):
+    if x[1] != 0 or x[2] != 0: return x
+    if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
+    return exp(lambertw(ln(x)))
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
 def heptation(a,b): return arrow(a,5,b)
@@ -1534,6 +1420,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
