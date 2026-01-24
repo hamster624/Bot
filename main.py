@@ -142,13 +142,6 @@ async def calc(ctx, *, expression: str):
             tokens = tokens[:-1]
 
         expr = " ".join(tokens).replace("^", "**")
-        # ---- Logging ----
-        if log_channel:
-            await log_channel.send(
-                f"[!calc] {ctx.author} (ID: {ctx.author.id}) "
-                f"in {location} "
-                f"sent: {expr} | format: {fmt_name}"
-            )
 
         # ---- Safe eval environment ----
         safe_globals = {
@@ -257,13 +250,6 @@ async def calc_slash(
     fmt_name = fmt.lower()
     if fmt_name not in formats:
         fmt_name = "format"
-
-    if log_channel:
-        await log_channel.send(
-            f"[/calc] {interaction.user} (ID: {interaction.user.id}) "
-            f"in {location} "
-            f"sent: {expression} | format: {fmt_name}"
-        )
 
     try:
         await interaction.response.defer(thinking=True)
@@ -1420,6 +1406,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
