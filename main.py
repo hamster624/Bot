@@ -783,7 +783,7 @@ def tetration(a, r, do=False):
     if r[1] != 0 or r[2] != 0: return maximum(a,r)
     a = a[0]
     r = r[0]
-    if lte(r, [[1, 2], 0, 0]): raise ValueError("tetr(a, r): undefined for r <= -2 on the principal branch")
+    if r[0][0] == 1: raise ValueError("Tetration height cant be a negative")
 
     if eq(a, [[0, 0], 0, 0]):
         if eq(r, [[0, 0], 0, 0]): raise ValueError("0^^0 is undefined")
@@ -904,6 +904,7 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     n_float = tofloat2(n)
     t = correct(base)
     n_corr = correct(n)
+    if n_corr[0][0] == 1: raise ValueError("Arrows height cant be a negative")
     if lte(n_corr, [[0, 1], 0, 0]): return pow(base, n)
     if gt(q, [[0, 20], 0, 0]):
         if base_float == None or n_float == None:
@@ -911,7 +912,7 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     if gt(maximum(n_corr, t), [0, 16, 1] + [0] * 17 + [1]): return maximum(n_corr, t)
     if gt(q, MAX_SAFE_INT):
         return [q[0], q[1], q[2]+1]
-    if lt(q, [[0, 0], 0, 0]): raise ValueError("n must be >= 0")
+    if lt(q, [[0, 0], 0, 0]): raise ValueError("arrows must be >= 0")
     arro = 100
     if lt(base, 3.1): base = 3.1
     if lt(base, 4): arro = 295
@@ -962,8 +963,9 @@ def logbase(a,b):
     return divide(log(a),log(b))
 def ln(a): return multiply(log(a),2.302585092994046) # log10(a)/log10(e) or log10(a)*(1/log10(e))
 def sqrt(a): return root(a,2)
-def root(a,b): 
-    if lt(b,[[0, 0], 0, 0]): raise ValueError("Can't root a negative")
+def root(a,b):
+    a, b = correct(a), correct(b)
+    if a[0][0] == 1: raise ValueError("Cant root a negative")
     if gt(b,[[0, 0], 0, 0]) and lt(b,[[0, 1], 0, 0]): return power(a,divide(1,b))
     if eq(b, [[0, 0], 0, 0]): raise ValueError("Root of 0 is undefined")
     return addlayer(divide(log(a),b))
@@ -1405,6 +1407,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
