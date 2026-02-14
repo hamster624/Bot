@@ -327,17 +327,17 @@ FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
 MultOnes = [
-    "", "Mi", "Mc", "Na", "Pi", "Fm", "At", "Zp", "Yc", "Xo", "Ve", "Me", "Due", 
-    "Tre", "Te", "Pt", "He", "Hp", "Oct", "En", "Ic", "Mei", "Dui", "Tri", "Teti", 
-    "Pti", "Hei", "Hp", "Oci", "Eni", "Tra", "TeC", "MTc", "DTc", "TrTc", "TeTc", 
-    "PeTc", "HTc", "HpT", "OcT", "EnT", "TetC", "MTetc", "DTetc", "TrTetc", "TeTetc", 
-    "PeTetc", "HTetc", "HpTetc", "OcTetc", "EnTetc", "PcT", "MPcT", "DPcT", "TPCt", 
-    "TePCt", "PePCt", "HePCt", "HpPct", "OcPct", "EnPct", "HCt", "MHcT", "DHcT", 
-    "THCt", "TeHCt", "PeHCt", "HeHCt", "HpHct", "OcHct", "EnHct", "HpCt", "MHpcT", 
-    "DHpcT", "THpCt", "TeHpCt", "PeHpCt", "HeHpCt", "HpHpct", "OcHpct", "EnHpct", 
-    "OCt", "MOcT", "DOcT", "TOCt", "TeOCt", "PeOCt", "HeOCt", "HpOct", "OcOct", 
-    "EnOct", "Ent", "MEnT", "DEnT", "TEnt", "TeEnt", "PeEnt", "HeEnt", "HpEnt", 
-    "OcEnt", "EnEnt", "Hect", "MeHect"
+    "", "Mi-", "Mc-", "Na-", "Pi-", "Fm-", "At-", "Zp-", "Yc-", "Xo-", "Ve-", "Me-", "Due-",
+    "Tre-", "Te-", "Pt-", "He-", "Hp-", "Oct-", "En-", "Ic-", "Mei-", "Dui-", "Tri-", "Teti-",
+    "Pti-", "Hei-", "Hp-", "Oci-", "Eni-", "Tra-", "TeC-", "MTc-", "DTc-", "TrTc-", "TeTc-",
+    "PeTc-", "HTc-", "HpT-", "OcT-", "EnT-", "TetC-", "MTetc-", "DTetc-", "TrTetc-", "TeTetc-",
+    "PeTetc-", "HTetc-", "HpTetc-", "OcTetc-", "EnTetc-", "PcT-", "MPcT-", "DPcT-", "TPCt-",
+    "TePCt-", "PePCt-", "HePCt-", "HpPct-", "OcPct-", "EnPct-", "HCt-", "MHcT-", "DHcT-",
+    "THCt-", "TeHCt-", "PeHCt-", "HeHCt-", "HpHct-", "OcHct-", "EnHct-", "HpCt-", "MHpcT-",
+    "DHpcT-", "THpCt-", "TeHpCt-", "PeHpCt-", "HeHpCt-", "HpHpct-", "OcHpct-", "EnHpct-",
+    "OCt-", "MOcT-", "DOcT-", "TOCt-", "TeOCt-", "PeOCt-", "HeOCt-", "HpOct-", "OcOct-",
+    "EnOct-", "Ent-", "MEnT-", "DEnT-", "TEnt-", "TeEnt-", "PeEnt-", "HeEnt-", "HpEnt-",
+    "OcEnt-", "EnEnt-", "Hect-", "MeHect-"
 ]
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
@@ -1407,6 +1407,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
