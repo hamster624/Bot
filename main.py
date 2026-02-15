@@ -984,6 +984,7 @@ def format(num, decimals=decimals, small=False):
     n = num_correct[0]
     if len(n) == 2 and abs(n[1]) < 1e-308 and num_correct[1] != 0 and num_correct[2] != 0: return f"{0:.{decimals}f}"
     if n[0] == 1: return "-" + format(neg(num_correct), decimals)
+    if eq(num_correct, 0): return "0"
     if lt(num_correct, 0.0001):
         inv = 1/tofloat(n)
         return "1/" + format(inv, decimals)
@@ -1413,6 +1414,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
