@@ -219,9 +219,9 @@ async def guide_slash(interaction: discord.Interaction):
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
     help_message += "!!**DO NOT USE ^, *, /, -, + **!! Use the operations that are above this text, if not then there is a big chance of something not working correctly. Correct usage: 10^10 -> pow(10, 10) or 45+55 -> add(45, 55) or 10^10^10 -> pow(10, pow(10, 10))\n"
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
-    help_message += "Hyper_log(num, base, height) lets you set the height of the number you log. Example: hyper_log(1000, 10, 3) is penta-log base 10 of 1000 because the height of 3 is pentation (^^^). For slog and hlog the base is the 2nd input.\n"
+    help_message += "hyper_log(num, height) lets you set the height of the number you log. Example: hyper_log(1000, 3) is penta-log base 10 of 1000 because the height of 3 is pentation (^^^).\n"
     help_message += "Usage: `/calc <expression> [format]`\n"
-    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' '). **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
+    help_message += "Number Usage: **for numbers below 2^1024 you can use float (normal numbers)**, but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' '). **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
     await interaction.response.send_message(help_message)
 
 # ---------------------
@@ -327,17 +327,17 @@ FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
 MultOnes = [
-    "", "Mi-", "Mc-", "Na-", "Pi-", "Fm-", "At-", "Zp-", "Yc-", "Xo-", "Ve-", "Me-", "Due-",
-    "Tre-", "Te-", "Pt-", "He-", "Hp-", "Oct-", "En-", "Ic-", "Mei-", "Dui-", "Tri-", "Teti-",
-    "Pti-", "Hei-", "Hp-", "Oci-", "Eni-", "Tra-", "TeC-", "MTc-", "DTc-", "TrTc-", "TeTc-",
-    "PeTc-", "HTc-", "HpT-", "OcT-", "EnT-", "TetC-", "MTetc-", "DTetc-", "TrTetc-", "TeTetc-",
-    "PeTetc-", "HTetc-", "HpTetc-", "OcTetc-", "EnTetc-", "PcT-", "MPcT-", "DPcT-", "TPCt-",
-    "TePCt-", "PePCt-", "HePCt-", "HpPct-", "OcPct-", "EnPct-", "HCt-", "MHcT-", "DHcT-",
-    "THCt-", "TeHCt-", "PeHCt-", "HeHCt-", "HpHct-", "OcHct-", "EnHct-", "HpCt-", "MHpcT-",
-    "DHpcT-", "THpCt-", "TeHpCt-", "PeHpCt-", "HeHpCt-", "HpHpct-", "OcHpct-", "EnHpct-",
-    "OCt-", "MOcT-", "DOcT-", "TOCt-", "TeOCt-", "PeOCt-", "HeOCt-", "HpOct-", "OcOct-",
-    "EnOct-", "Ent-", "MEnT-", "DEnT-", "TEnt-", "TeEnt-", "PeEnt-", "HeEnt-", "HpEnt-",
-    "OcEnt-", "EnEnt-", "Hect-", "MeHect-"
+    "", "Mi", "Mc", "Na", "Pi", "Fm", "At", "Zp", "Yc", "Xo", "Ve", "Me", "Due", 
+    "Tre", "Te", "Pt", "He", "Hp", "Oct", "En", "Ic", "Mei", "Dui", "Tri", "Teti", 
+    "Pti", "Hei", "Hp", "Oci", "Eni", "Tra", "TeC", "MTc", "DTc", "TrTc", "TeTc", 
+    "PeTc", "HTc", "HpT", "OcT", "EnT", "TetC", "MTetc", "DTetc", "TrTetc", "TeTetc", 
+    "PeTetc", "HTetc", "HpTetc", "OcTetc", "EnTetc", "PcT", "MPcT", "DPcT", "TPCt", 
+    "TePCt", "PePCt", "HePCt", "HpPct", "OcPct", "EnPct", "HCt", "MHcT", "DHcT", 
+    "THCt", "TeHCt", "PeHCt", "HeHCt", "HpHct", "OcHct", "EnHct", "HpCt", "MHpcT", 
+    "DHpcT", "THpCt", "TeHpCt", "PeHpCt", "HeHpCt", "HpHpct", "OcHpct", "EnHpct", 
+    "OCt", "MOcT", "DOcT", "TOCt", "TeOCt", "PeOCt", "HeOCt", "HpOct", "OcOct", 
+    "EnOct", "Ent", "MEnT", "DEnT", "TEnt", "TeEnt", "PeEnt", "HeEnt", "HpEnt", 
+    "OcEnt", "EnEnt", "Hect", "MeHect"
 ]
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
@@ -678,6 +678,7 @@ def add(a, b):
 
 def subtract(a,b):
     a, b = correct(a), correct(b)
+    if tofloat2(a) != None and tofloat2(b) != None: return correct(tofloat2(a)-tofloat2(b))
     if eq(a,b) and a[0] == b[0]: return [[0, 0], 0, 0]
     if gt(a, [[0, MAX_SAFE_INT, 1], 0, 0]) or gt(b, [[0, MAX_SAFE_INT, 1], 0, 0]):
         if gt(b,a): return neg(b)
@@ -783,7 +784,7 @@ def tetration(a, r, do=False):
     if r[1] != 0 or r[2] != 0: return maximum(a,r)
     a = a[0]
     r = r[0]
-    if r[0] == 1: raise ValueError("Tetration height cant be a negative")
+    if r[0][0] == 1: raise ValueError("Tetration height cant be a negative")
 
     if eq(a, [[0, 0], 0, 0]):
         if eq(r, [[0, 0], 0, 0]): raise ValueError("0^^0 is undefined")
@@ -1407,6 +1408,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
