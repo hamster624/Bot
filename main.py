@@ -702,12 +702,10 @@ def subtract(a,b):
         if gt(a,b): return a
     a = a[0]
     b = b[0]
-    if eq(a,b): return neg(add(abs_val(a),abs_val(b)))
+    if lt(a,b): return neg(subtract(b, a))
     if a[0] == 1 and b[0] == 1: return neg(subtract(abs_val(b), abs_val(a)))
     if a[0] == 1 and b[0] == 0: return neg(addlayer(tofloat(log(abs_val(a))) + tofloat(log(1 + tofloat(addlayer(tofloat(log(b)) - tofloat(log(abs_val(a)))))))))
     if a[0] == 0 and b[0] == 1: return add(a, abs_val(b))
-    if lt(a,b):
-        if a[0] == 0 and b[0] == 0: return neg(addlayer(tofloat(log(a)) + tofloat(log(abs_val(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))))
     if a[0] == 0 and b[0] == 0: return addlayer(tofloat(log(a)) + tofloat(log(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))
 
 def multiply(a, b):
@@ -1427,6 +1425,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
