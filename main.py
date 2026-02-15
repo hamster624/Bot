@@ -268,6 +268,11 @@ async def calc_slash(
         safe_globals = {
             "__builtins__": {},
             "math": math,
+            "pi": math.pi,
+            "π": math.pi,
+            "e": math.e,
+            "tau": math.tau,
+            "phi": (1 + 5 ** 0.5) / 2,
             "tetration": tetration,
             "tetr": tetration,
             "pent": pent,
@@ -293,6 +298,7 @@ async def calc_slash(
             "lambertw": lambertw,
             "root": root,
             "sqrt": sqrt,
+            "ssqrt": ssqrt,
             "eq": eq,
             "lt": lt,
             "gte": gte,
@@ -1415,4 +1421,5 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
