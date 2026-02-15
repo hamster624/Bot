@@ -69,7 +69,7 @@ async def on_ready():
 @bot.command()
 async def guide(ctx):
     formats = ["format","array","hyper_e","suffix", "string", "arrow_format"]
-    operations = ["expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+    operations = ["expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "ssqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog (penta-log)", "hlog (hexa-log)", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
@@ -80,9 +80,9 @@ async def guide(ctx):
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
     help_message += "!!**DO NOT USE ^, *, /, -, + **!! Use the operations that are above this text, if not then there is a big chance of something not working correctly. Correct usage: 10^10 -> pow(10, 10) or 45+55 -> add(45, 55) or 10^10^10 -> pow(10, pow(10, 10))\n"
     help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
-    help_message += "Hyper_log(num, base, height) lets you set the height of the number you log. Example: hyper_log(1000, 10, 3) is penta-log base 10 of 1000 because the height of 3 is pentation (^^^). For slog and hlog the base is the 2nd input.\n"
-    help_message += "Usage: `!calc <expression> [format]`\n"
-    help_message += "Number Usage: for numbers below 2^1024 you can use float (normal numbers), but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' '). **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
+    help_message += "hyper_log(num, height) lets you set the height of the number you log. Example: hyper_log(1000, 3) is penta-log base 10 of 1000 because the height of 3 is pentation (^^^).\n"
+    help_message += "Usage: `/calc <expression> [format]`\n"
+    help_message += "Number Usage: **for numbers below 2^1024 you can use float (normal numbers)**, but after they go higher use either the string format so '10^^10' or the hyper_e which is 'E10000000000#8' or the array format [0, 10000000000, 8] (shouldnt be in ' '). **MAKE SURE ALL OF THESE EXCEPT THE ARRAY FORMAT ARE IN ' '**"
     await ctx.send(help_message)
 def _eval_in_subprocess(expr: str, safe_globals: dict, q: mp.Queue):
     try:
@@ -177,6 +177,7 @@ async def calc(ctx, *, expression: str):
             "lambertw": lambertw,
             "root": root,
             "sqrt": sqrt,
+            "ssqrt": ssqrt,
             "eq": eq,
             "lt": lt,
             "gte": gte,
@@ -213,7 +214,7 @@ async def calc(ctx, *, expression: str):
 @bot.tree.command(name="guide", description="Shows help for the calculator")
 async def guide_slash(interaction: discord.Interaction):
     formats = ["format","array","hyper_e","suffix", "string", "arrow_format"]
-    operations = ["expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "addlayer",
+    operations = ["expansion", "arrow (arrow)","hept (heptation)","hex (hexation)","pent (pentation)", "tetr (tetration)", "pow (power)", "exp", "root", "sqrt", "ssqrt", "addlayer",
                   "log", "ln", "logbase", "slog", "plog (penta-log)", "hlog (hexa-log)", "hyper_log", "lambertw",
                   "fact (factorial)", "gamma",
                   "add (addition)", "sub (subtract)", "mul (multiply)", "div (division)",
@@ -1414,3 +1415,4 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
