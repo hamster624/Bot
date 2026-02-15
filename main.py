@@ -363,8 +363,13 @@ def correct(x):
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
     if isinstance(x, str):
-        try: x =correct(float(x))
-        except: pass
+        if ('e' in x) and x.count("e") == 1:
+            before, after = x.split("e")
+            if before == "": before = 1
+            start_array = [0, 0, 0]
+            start_array[1] = math.log10(float(before)) + float(after)
+            if start_array[2] == 0: start_array[2] = 1
+            return correct(start_array)
         s = x.strip()
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
@@ -1422,6 +1427,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
