@@ -327,7 +327,7 @@ async def calc_slash(
 import math
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-max_suffix = 1e308 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -951,7 +951,7 @@ def expansion(a, b):
     if eq(a, 1): return [[0, 1], 0, 0]
     if eq(a, 2): return [[0, 4], 0, 0]
     if eq(a, 0): return [[0, 0], 0, 0]
-    if float_b == None: return [[0, 10000000000, 1]] + [0] + [add(a[2], b)]
+    if float_b == None: raise OverflowError("Expansion height can not go over 2^1024-1 (1e308)")
     b=float_b
     if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
     b = int(b)
@@ -1414,26 +1414,3 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
