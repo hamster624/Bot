@@ -1175,7 +1175,7 @@ def _suffix(x, suffix_decimals=decimals):
 
     if SNumber < 1000:
         suffixpart(SNumber)
-        return format_with_suffix(base_num, "") + txt
+        return format_with_suffix(base_num, "") + txt + "-"
 
     for i in range(len(MultOnes)-1, -1, -1):
         power_val = 10 ** (i * 3)
@@ -1184,7 +1184,8 @@ def _suffix(x, suffix_decimals=decimals):
             suffixpart2(part_val - 1)
             txt += MultOnes[i]
             SNumber = SNumber % power_val
-    return format_with_suffix(base_num, "") + txt
+    return_thingy = format_with_suffix(base_num, "") + txt
+    return return_thingy[:-1] if return_thingy.endswith('-') else return_thingy
 
 def suffix(num, small=False):
     precision2 = max(5, decimals)
@@ -1428,6 +1429,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
