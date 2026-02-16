@@ -334,7 +334,7 @@ async def calc_slash(
 import math
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 1e308 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -360,6 +360,10 @@ precise_arrow = False # Would not recommend turning this to True
 arrow_precision = 44 # Would nto recommend changing this
 grahams_number = [[0, 3638334640023.7783, 7625597484984, 0, 1], 0, 63] # This variable is unused and is only here just to show how much the grahams number is
 def correct(x):
+    is_inf = 0
+    try: is_inf = math.isinf(x)
+    except: pass
+    if is_inf: raise OverflowError("Infinity")
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
     if isinstance(x, str):
@@ -443,7 +447,7 @@ def correct(x):
             x[2] += 1
         if x[2] != 0 and len(arr) == 2: raise ValueError("If layer is more than 0 and array is less than 2^53-1 its undefined")
         return [arr] + x[1:]
-    raise TypeError("Unsupported type for correct")
+    raise TypeError("Unsupported type for correct. Input:" + str(x))
 def polarize(array, smallTop=False):
     pairs = correct(array)[0][1:]
     bottom = pairs[0]
@@ -1402,7 +1406,6 @@ def arrow_format(x):
         if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
         return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 def ssqrt(x):
-    x = correct(x)
     if x[1] != 0 or x[2] != 0: return x
     if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
     return exp(lambertw(ln(x)))
@@ -1425,6 +1428,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
