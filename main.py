@@ -1202,92 +1202,7 @@ def suffix(num, small=False):
     elif lt(num_correct, 1000): return regular_format(n, decimals)
     elif lt(num_correct, MAX_SAFE_INT): return _suffix(n)
     elif lt(num_correct, [0, max_suffix, 1]): return _suffix(n)
-    elif lt(num_correct, [0, max_suffix, 2]):
-        bottom = n[1]
-        rep = n[2] - 1
-        if bottom >= 1e9:
-            bottom = _log10(bottom)
-            rep += 1
-        m = 10 ** (bottom - int(bottom))
-        e = int(bottom)
-        p = precision2
-        return regular_format([0, m], p) + "e" + _suffix(e)
-    elif lt(num_correct, [0, max_suffix, 3]):
-        bottom = n[1]
-        rep = n[2] - 1
-        if bottom >= 1e9:
-            bottom = _log10(bottom)
-            rep += 1
-        m = 10 ** (bottom - int(bottom))
-        e = int(bottom)
-        p = precision2
-        return "e" + regular_format([0, m], p) + "e" + _suffix(e)
-    elif lt(num_correct, [0, 10000000000, 3]):
-        bottom = n[1]
-        rep = n[2] - 1
-        if bottom >= 1e9:
-            bottom = _log10(bottom)
-            rep += 1
-        m = 10 ** (bottom - int(bottom))
-        e = int(bottom)
-        p = precision2
-        return "ee" + regular_format([0, m], p) + "e" + _suffix(e)
-    pol = polarize(n)
-    if lt(num_correct, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + _suffix(pol['top'], 0)
-    elif lt(num_correct, [0, 10000000000, 8, 3]):
-        rep = n[3]
-        if rep >= 1:
-            n_arr = set_to_zero(n, 3)
-            return ("F" * int(rep)) + suffix(n_arr, decimals)
-        n_val = n[2] + 1
-        if gte(num_correct, [0, 10, n_val]):
-            n_val += 1
-        return "F" + suffix(n_val, decimals)
-    elif lt(num_correct, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + _suffix(pol['top'], 0)
-    elif lt(num_correct, [0, 10000000000, 8, 8, 3]):
-        rep = n[4]
-        if rep >= 1:
-            n_arr = set_to_zero(n, 4)
-            return ("G" * int(rep)) + suffix(n_arr, decimals)
-        n_val = n[3] + 1
-        if gte(num_correct, [0, 10, 0, n_val]):
-            n_val += 1
-        return "G" + suffix(n_val, decimals)
-    elif lt(num_correct, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + _suffix(pol['top'], 0)
-    elif lt(num_correct, [0, 10000000000, 8, 8, 8, 3]):
-        rep = n[5]
-        if rep >= 1:
-            n_arr = set_to_zero(n, 5)
-            return ("H" * int(rep)) + suffix(n_arr, decimals)
-        n_val = n[4] + 1
-        if gte(num_correct, [0, 10, 0, 0, n_val]):
-            n_val += 1
-        return "H" + suffix(n_val, decimals)
-    elif gte(num_correct[2], MAX_SAFE_INT): return "K" + suffix(num_correct[2])
-    elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + suffix(num_correct[:2] + [0])
-    elif num_correct[2] != 0 and num_correct[2] >= 4:
-        pol = polarize(n, True)
-        if lt(n, [0, 10000000000, 8]): return suffix(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + suffix(num_correct[2]+1)
-        if lt(n, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return suffix(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E, precision4) + "K" + suffix(num_correct[2]+1)
-        else:
-            if num_correct[1] == 0: num_correct[1] = len(n)-1
-            nextToTopJ = num_correct[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
-            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
-            else: bottom = _log10(nextToTopJ)
-            if nextToTopJ >= 1e10: top = 2
-            else: top = 1
-        return suffix(1+ _log10(_log10(bottom)+top),precision4) + "K" + suffix(num_correct[2]+2)
-    elif num_correct[1] != 0:
-        pol = polarize(n, True)
-        val = _log10(pol['bottom']) + pol['top']
-        j = num_correct[1]
-        if j > 1e9: j = suffix(j, 6)
-        else: j = suffix(j)
-        return regular_format([0, val], precision4) + "J" + j
-    else:
-        pol = polarize(n, True)
-        val = _log10(pol['bottom']) + pol['top']
-        return regular_format([0, val], precision4) + "J" + suffix(pol['height'])
+    return format(num)
 def from_hyper_e(x):
     if "##" in x: raise NotImplementedError("If you are trying to convert a hyper_e and it has ## in it, then it's not implemented yet.")
     if not x.lstrip('-').startswith('E'): raise ValueError("Not a hyper_e string")
@@ -1429,6 +1344,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
