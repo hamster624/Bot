@@ -1332,13 +1332,18 @@ def ssqrt(x):
     if x[1] != 0 or x[2] != 0: return x
     if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
     return exp(lambertw(ln(x)))
-fib_cache = {}
 F_SMALL = [0, 1]
 for i in range(2, 101): F_SMALL.append(F_SMALL[i-1] + F_SMALL[i-2])
 
 def fib(n):
-    if n in fib_cache: return fib_cache[n]
-    if n <= 100: result = F_SMALL[n]
+    n = correct(n)
+    if (not _is_int_like(n)) and lte(n, 100):
+        x = sub(mul(n, LOG10_PHI), LOG10_SQRT5)
+        x_floor = floor(x)
+        frac = sub(x, x_floor)
+        result = mul(addlayer(frac), addlayer(x_floor))
+        return result
+    if lte(n,100): result = F_SMALL[n]
     else:
         x = sub(mul(n, LOG10_PHI), LOG10_SQRT5)
         x_floor = floor(x)
@@ -1364,6 +1369,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
