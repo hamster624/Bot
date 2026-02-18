@@ -382,6 +382,8 @@ def correct(x):
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
         if any(c in "}^)e" for c in s): return fromstring(s)
+        try: return float(x)
+        except: pass
         raise NotImplementedError("Can't convert the format you input")
         return fromformat(s)
 
@@ -1362,6 +1364,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
