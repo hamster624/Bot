@@ -153,6 +153,7 @@ async def calc(ctx, *, expression: str):
             "tau": math.tau,
             "phi": (1 + 5 ** 0.5) / 2,
             "tetration": tetration,
+            "fib": fib,
             "tetr": tetration,
             "pent": pent,
             "hex": hex,
@@ -275,6 +276,7 @@ async def calc_slash(
             "phi": (1 + 5 ** 0.5) / 2,
             "tetration": tetration,
             "tetr": tetration,
+            "fib": fib,
             "pent": pent,
             "hex": hex,
             "hept": hept,
@@ -355,6 +357,8 @@ MultOnes = [
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
 LOG5E = 0.6213349345596118
+LOG10_PHI = 0.20898764024997873
+LOG10_SQRT5 = 0.3494850021680094
 _log10 = math.log10
 precise_arrow = False # Would not recommend turning this to True
 arrow_precision = 44 # Would nto recommend changing this
@@ -609,6 +613,7 @@ def lambertw(x):
 def log(x):
     arr = correct(x)
     if arr[0][0] == 1: raise ValueError("Can't log a negative")
+    if eq(x, 0): return [[0, 0], 0, 0]
     if arr[1] != 0 or arr[2] != 0: return arr
     arr = arr[0]
     len_arr = len(arr)
@@ -1325,6 +1330,19 @@ def ssqrt(x):
     if x[1] != 0 or x[2] != 0: return x
     if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
     return exp(lambertw(ln(x)))
+fib_cache = {}
+F_SMALL = [0, 1]
+for i in range(2, 101): F_SMALL.append(F_SMALL[i-1] + F_SMALL[i-2])
+
+def fib(n):
+    if n in fib_cache: return fib_cache[n]
+    if n <= 100: result = F_SMALL[n]
+    else:
+        x = sub(mul(n, LOG10_PHI), LOG10_SQRT5)
+        x_floor = floor(x)
+        frac = sub(x, x_floor)
+        result = mul(addlayer(frac), addlayer(x_floor))
+    return result
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
 def heptation(a,b): return arrow(a,5,b)
@@ -1344,6 +1362,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
