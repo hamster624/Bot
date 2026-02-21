@@ -895,14 +895,13 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
         target_len = r + 2
         arr_res = arr_n + [0] * (target_len - len(arr_n))
         arr_res[-1] += 1
-        return correct(arr_res)
-
+        return correct(arr_res)[0]
 
     thr_r = [0, MAX_SAFE_INT, 1]
     if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
     u = int(s)
     frac = s - u
-    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, False, done=True)
+    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, True, done=True)
     else:
         i = t
         if u > 0: u -= 1
@@ -923,7 +922,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
                 i[idx] = i[idx] + u
             return i
     except Exception: pass
-    return i
+    return correct(i)
 
 def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     q = correct(arrows)
@@ -957,7 +956,7 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
             s = s_t ** (s - 1)
         result[1] = r-amount
         result[0] = _arrow(base, arro, n)
-        return result
+        return correct(result)
     r_float = tofloat2(q)
     if r_float != None: 
         if _is_int_like(r_float) == False: raise("Arrows must be an integer")
@@ -1337,12 +1336,8 @@ for i in range(2, 101): F_SMALL.append(F_SMALL[i-1] + F_SMALL[i-2])
 
 def fib(n):
     n = correct(n)
-    if (not _is_int_like(n)) and lte(n, 100):
-        x = sub(mul(n, LOG10_PHI), LOG10_SQRT5)
-        x_floor = floor(x)
-        frac = sub(x, x_floor)
-        result = mul(addlayer(frac), addlayer(x_floor))
-        return result
+    if n[0][0] == 1: raise ValueError("Cant fibonacci a negative number")
+    if (not _is_int_like(n)) and lte(n, 100): raise ValueError("Cant fibonacci a non-integer number")
     if lte(n,100): result = F_SMALL[n]
     else:
         x = sub(mul(n, LOG10_PHI), LOG10_SQRT5)
@@ -1369,6 +1364,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
