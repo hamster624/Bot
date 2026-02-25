@@ -727,7 +727,9 @@ def multiply(a, b):
     a = a[0]
     b = b[0]
     result_sign = a[0] ^ b[0]
-    if gt(a, [[0, 1000, 2], 0, 0]) or gt(b, [[0, 1000, 2], 0, 0]): return maximum(a,b)
+    if gt(a, [[0, 1000, 2], 0, 0]) or gt(b, [[0, 1000, 2], 0, 0]):
+        if a[2] != b[2]: return maximum(a,b)
+        return addlayer(add(log(a), log(b)))
     if len(a) == 2 and len(b) == 2:
         val = (a[1] if a[0] == 0 else -a[1]) * (b[1] if b[0] == 0 else -b[1])
         return correct([0 if val >= 0 else 1, abs(val)])
@@ -994,6 +996,14 @@ def root(a,b):
     if a[0][0] == 1: raise ValueError("Cant root a negative")
     if gt(b,[[0, 0], 0, 0]) and lt(b,[[0, 1], 0, 0]): return power(a,divide(1,b))
     if eq(b, [[0, 0], 0, 0]): raise ValueError("Root of 0 is undefined")
+    a = a[0]
+    float_b = tofloat(b)
+    if len(a) > 3: return addlayer(divide(log(a),b))
+    if len(a) == 3 and float_b != None:
+        if a[2] == 1: return correct([0, a[1]/float_b, 1])
+        if a[2] == 2: return correct([0, a[1]-1+_log10(10/float_b), 2])
+        return addlayer(divide(log(a),b))
+    if float_b != None: return correct([0, a[1]**(1/float_b)])
     return addlayer(divide(log(a),b))
 def exp(x): return power(2.718281828459045, x)
 def format(num, decimals=decimals, small=False):
@@ -1093,7 +1103,6 @@ def hyper_e(x, use_sign=True):
 def string(arr, top=True):
     arr = correct(arr)
     sign = "-" if arr[0][0] == 1 and top else ""
-    if gte(arr[2], MAX_SAFE_INT): return "K" + string(arr[2])
     if arr[2] != 0:
         if arr[2] >=5: return "J^" + str(int(arr[2])) + " " + string(arr[:2] + [0])
         return "J" * arr[2] + string(arr[:2] + [0])
@@ -1167,9 +1176,9 @@ def _suffix(x, suffix_decimals=decimals):
         txt += SecondOnes[Tens]
         txt += ThirdOnes[Hundreds]
 
-    def suffixpart2(n):
+    def suffixpart2(n, i):
         nonlocal txt
-        if n > 0: n += 1
+        if n > 0 or i == 0: n += 1
         if n > 1000: n = n % 1000
         Hundreds = int(n / 100)
         n = n % 100
@@ -1181,13 +1190,13 @@ def _suffix(x, suffix_decimals=decimals):
 
     if SNumber < 1000:
         suffixpart(SNumber)
-        return format_with_suffix(base_num, "") + txt + "-"
+        return format_with_suffix(base_num, "") + txt
 
     for i in range(len(MultOnes)-1, -1, -1):
         power_val = 10 ** (i * 3)
         if SNumber >= power_val:
             part_val = int(SNumber / power_val)
-            suffixpart2(part_val - 1)
+            suffixpart2(part_val - 1, i)
             txt += MultOnes[i]
             SNumber = SNumber % power_val
     return_thingy = format_with_suffix(base_num, "") + txt
@@ -1226,8 +1235,6 @@ def count_repeating(s, target=None):
     return count
 # Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent ~3h for this trash
 def fromstring(x, done=False):
-    if x.startswith("K"):
-        return [[0, 10000000000, 1]] + [0, fromstring(x.removeprefix("K"))]
     if x.startswith("J^"):
         x = x.strip("J^")
         return fromstring(x.split(" ", 1)[1])[:2] + [float(x.split(" ", 1)[0])]
@@ -1301,7 +1308,7 @@ def arrow_format(x):
     x0 = x[0]
     if x[2] != 0:
         if x[2] > MAX_SAFE_INT: return "10{{1}}" + str(float(x[2]))
-        if x[2] < 4: return "10{10}" * x[2] + arrow_format(x[:2] + [0])
+        if x[2] < 4: return "10{" * x[2] + arrow_format(x[:2] + [0]) + "}10" * x[2]
         x0 = x[0]
         pol = polarize(x0, True)
         if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[2]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
@@ -1365,6 +1372,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
