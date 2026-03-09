@@ -54,6 +54,7 @@ intents = discord.Intents.default()
 intents.guilds = True
 intents.messages = True
 intents.message_content = True
+intents.dm_messages = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # ---------------------
@@ -1439,6 +1440,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
