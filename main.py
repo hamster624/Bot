@@ -124,7 +124,7 @@ async def safe_eval_process(expr: str, safe_globals: dict, timeout: float = EVAL
         raise
     except Exception:
         raise
-@bot.event
+@bot.command()
 async def calc(ctx, *, expression: str):
     formats = {
         "format": format,
@@ -1439,6 +1439,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
