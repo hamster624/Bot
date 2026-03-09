@@ -61,8 +61,11 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # ---------------------
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
-    print(f"✅ Logged in as {bot.user}")
+    try:
+        await bot.tree.sync(guild=None)
+        print(f"✅ Logged in as {bot.user} | Slash commands synced globally")
+    except Exception as e:
+        print(f"⚠️ Failed to sync slash commands globally: {e}")
 # ---------------------
 # Calculator Commands (!calc + /calc)
 # ---------------------
@@ -1436,6 +1439,7 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
+
 
 
 
