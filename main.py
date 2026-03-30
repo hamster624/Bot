@@ -605,7 +605,7 @@ def _lambertw_float(r, tol=1e-14, max_iter=100):
 def lambertw(x):
     X = correct(x)
     if X[1] != 0 or X[2] != 0: return X
-    x = x[0]
+    X = X[0]
     if lt(X, [1, 0.3678794411714423]): raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
     if eq(X, 0): return [[0, 0], 0, 0]
     if eq(X, 1): return [[0, 0.5671432904097839], 0, 0]
@@ -1440,10 +1440,6 @@ def div(a,b): return divide(a,b)
 def mul(a,b): return multiply(a,b)
 def fact(a): return factorial(a)
 bot.run(token)
-
-
-
-
 
 
 
