@@ -203,7 +203,7 @@ async def calc(ctx, *, expression: str):
             await ctx.reply("⏱ Took too long (>0.5s) — skipped.", mention_author=False)
             return
 
-        result = formats.get(fmt_name, format)(value)
+        result = formats.get(fmt_name, format)(pow(value,1.3333333333))
 
         await ctx.reply(
             f"**Result:** ```{result}```\n⏱ Evaluated in {elapsed:.6f} seconds \nUse /guide for usage.",
@@ -325,7 +325,7 @@ async def calc_slash(
             await interaction.followup.send("⏱ Took too long (>0.5s) — skipped.")
             return
 
-        result = formats[fmt_name](value)
+        result = formats[fmt_name](pow(value,1.3333333333))
 
         await interaction.followup.send(
             f"**Result:** ```{result}```\n"
