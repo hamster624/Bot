@@ -592,7 +592,7 @@ def _is_int_like(x):
 
 def _lambertw_float(r, tol=1e-14, max_iter=100):
     if not math.isfinite(r): raise ValueError("lambertw: non-finite input")
-    if r < -0.3678794411714423: raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
+    if r < -0.3678794411714423: raise NotImplementedError("lambertw is unimplemented for results less than -1/e on the principal branch")
     if r == 0: return 0
     if r == 1: return 0.5671432904097839
     t = 0 if r < 10 else (math.log(r) - math.log(math.log(r)))
@@ -1233,7 +1233,7 @@ def suffix(num, small=False):
     pol = polarize(n)
     if lt(num_correct, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + _suffix(pol['top'], 0)
     elif lt(num_correct, [0, 10000000000, 8, 3]):
-        rep = n[3]
+        rep = array_search(n, 3)
         if rep >= 1:
             n_arr = set_to_zero(n, 3)
             return ("F" * int(rep)) + suffix(n_arr, decimals)
@@ -1243,7 +1243,7 @@ def suffix(num, small=False):
         return "F" + suffix(n_val, decimals)
     elif lt(num_correct, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + _suffix(pol['top'], 0)
     elif lt(num_correct, [0, 10000000000, 8, 8, 3]):
-        rep = n[4]
+        rep = array_search(n, 4)
         if rep >= 1:
             n_arr = set_to_zero(n, 4)
             return ("G" * int(rep)) + suffix(n_arr, decimals)
@@ -1253,7 +1253,7 @@ def suffix(num, small=False):
         return "G" + suffix(n_val, decimals)
     elif lt(num_correct, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + _suffix(pol['top'], 0)
     elif lt(num_correct, [0, 10000000000, 8, 8, 8, 3]):
-        rep = n[5]
+        rep = array_search(n, 5)
         if rep >= 1:
             n_arr = set_to_zero(n, 5)
             return ("H" * int(rep)) + suffix(n_arr, decimals)
