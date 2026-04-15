@@ -732,7 +732,7 @@ def multiply(a, b):
     b = b[0]
     result_sign = a[0] ^ b[0]
     if gt(a, [[0, 1000, 2], 0, 0]) or gt(b, [[0, 1000, 2], 0, 0]):
-        if a[2] != b[2]: return maximum(a,b)
+        if array_search(a,2) != array_search(b,2): return maximum(a,b)
         return addlayer(add(log(a), log(b)))
     if len(a) == 2 and len(b) == 2:
         val = (a[1] if a[0] == 0 else -a[1]) * (b[1] if b[0] == 0 else -b[1])
