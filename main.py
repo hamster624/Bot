@@ -986,7 +986,7 @@ def expansion(a, b):
     if b == 1: return a
     if b == 2:
         if eq(a,2): return [[0, 4], 0, 0]
-    result = [0, 0, float(b-2)]
+    result = [0, 0, b-2]
     if gt(a, MAX_SAFE_INT): result[2] += 1+a[2]
     result[:2] = arrow(a, a, a)[:2]
     return result
