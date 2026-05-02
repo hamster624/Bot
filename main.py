@@ -571,9 +571,7 @@ def neg(x):
 
 def tofloat(a):
     a = correct(a)
-    if a[0][0] == 1:
-        if gt(neg(a), [0, 308.25, 1]): return None
-    if gt(a, [0, 308.25, 1]): return None
+    if gt(abs(a), [0, 308.2547155599167439, 1]): return None
     a = a[0]
     val = a[1]
     if len(a) == 3: val = 10**val
