@@ -569,9 +569,15 @@ def neg(x):
     x = correct(x)
     return [[1-x[0][0]] + x[0][1:]] + x[1:]
 
+def abs_val(x): 
+    x=correct(x)
+    after = x[1:]
+    x=x[0]
+    return correct([[0] + x[1:]]+after)
+
 def tofloat(a):
     a = correct(a)
-    if gt(abs(a), [0, 308.2547155599167439, 1]): return None
+    if gt(abs_val(a), [0, 308.2547155599167439, 1]): return None
     a = a[0]
     val = a[1]
     if len(a) == 3: val = 10**val
@@ -664,11 +670,6 @@ def hyper_log(x, k):
     if arr_len == (k + 2): return correct([0] + x[1:(k + 1)] + [x[k + 1] - 1])
     if arr_len > (k + 2): return x
     return correct(start)
-def abs_val(x): 
-    x=correct(x)
-    after = x[1:]
-    x=x[0]
-    return correct([[0] + x[1:]]+after)
 
 def addlayer(x, layers=1,_add=0):
     arr = correct(x)
