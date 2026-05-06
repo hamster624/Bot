@@ -569,15 +569,11 @@ def neg(x):
     x = correct(x)
     return [[1-x[0][0]] + x[0][1:]] + x[1:]
 
-def abs_val(x): 
-    x=correct(x)
-    after = x[1:]
-    x=x[0]
-    return correct([[0] + x[1:]]+after)
-
 def tofloat(a):
     a = correct(a)
-    if gt(abs_val(a), [0, 308.2547155599167439, 1]): return None
+    if a[0][0] == 1:
+        if gt(neg(a), [0, 308.25, 1]): return None
+    if gt(a, [0, 308.25, 1]): return None
     a = a[0]
     val = a[1]
     if len(a) == 3: val = 10**val
@@ -663,13 +659,17 @@ def hyper_log(x, k):
     if k == 1: return log(x)
     arr_len = len(x)
     pol = polarize(x, True)
-    print(x)
     start = _log10(pol['bottom']) + pol['top']
     for i in range(k-pol["height"]-1): start = _log10(start)+1
     if arr_len == (k + 1): return correct(tofloat(hyper_log(x[:k], k)) + x[k])
     if arr_len == (k + 2): return correct([0] + x[1:(k + 1)] + [x[k + 1] - 1])
     if arr_len > (k + 2): return x
     return correct(start)
+def abs_val(x): 
+    x=correct(x)
+    after = x[1:]
+    x=x[0]
+    return correct([[0] + x[1:]]+after)
 
 def addlayer(x, layers=1,_add=0):
     arr = correct(x)
@@ -1023,7 +1023,7 @@ def format(num, decimals=decimals, small=False):
         return "1/" + format(inv, decimals)
     elif lt(num_correct, 1): return regular_format(n, decimals + (2 if small else 0))
     elif lt(num_correct, 1000): return regular_format(n, decimals)
-    elif lt(num_correct, MAX_SAFE_INT): return comma_format(n)
+    elif lt(num_correct, MAX_SAFE_INT): return comma_format(n, decimals)
     elif lt(num_correct, [0, 10000000000, 3]):
         bottom = array_search(n, 1)
         rep = array_search(n, 2) - 1
