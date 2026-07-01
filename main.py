@@ -1456,4 +1456,9 @@ def fib(n):
         frac = sub(x, x_floor)
         result = mul(addlayer(frac), addlayer(x_floor))
     return result
+def ssqrt(x):
+    x = correct(x)
+    if x[1] != 0 or x[2] != 0: return x
+    if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
+    return exp(lambertw(ln(x)))
 bot.run(token)
