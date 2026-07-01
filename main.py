@@ -143,7 +143,7 @@ def parser(expr: str):
     while i < len(expr):
         char = expr[i]
 
-        if char.isdigit() or char in (".", "#", "E"):
+        if char.isdigit() or char in ".eE#":
             num = char
             while i + 1 < len(expr) and (expr[i + 1].isdigit() or expr[i + 1] in ".eE#"):
                 i += 1
