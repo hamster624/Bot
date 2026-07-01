@@ -526,7 +526,8 @@ MultOnes = [
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
 _log10 = math.log10
-
+LOG10_PHI = 0.20898764024997873
+LOG10_SQRT5 = 0.3494850021680094
 # You can ignore these, these are only to help the code.
 def correct(x, base3=10):
     is_inf = 0
@@ -1441,4 +1442,18 @@ def arrow_format(x):
     arrow = pol['height']+1
     if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
     return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
+F_SMALL = [0, 1]
+for i in range(2, 101): F_SMALL.append(F_SMALL[i-1] + F_SMALL[i-2])
+
+def fib(n):
+    n = correct(n)
+    if n[0] == 1: raise ValueError("Cant fibonacci a negative number")
+    if (not _is_int_like(n)) and lte(n, 100): raise ValueError("Cant fibonacci a non-integer number")
+    if lte(n, 100): result = F_SMALL[n]
+    else:
+        x = sub(mul(n, LOG10_PHI), LOG10_SQRT5)
+        x_floor = floor(x)
+        frac = sub(x, x_floor)
+        result = mul(addlayer(frac), addlayer(x_floor))
+    return result
 bot.run(token)
