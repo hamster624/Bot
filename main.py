@@ -502,7 +502,7 @@ import math
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-precise_arrow = True # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
+precise_arrow = False # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
 arrow_precision = 44 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
 max_suffix = 1.79e308 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
