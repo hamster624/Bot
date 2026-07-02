@@ -177,10 +177,21 @@ def parser(expr: str):
 
             if operators and isinstance(operators[-1], str) and operators[-1].isidentifier():
                 func = operators.pop()
+
                 if not output:
                     error(expr, i, f"Function '{func}' is missing an argument")
-                arg = output.pop()
-                output.append(f"{func}({arg})")
+
+                args = []
+                while output:
+                    x = output.pop()
+                    if x == "__ARG__":
+                        continue
+                    args.append(x)
+                    if not output or output[-1] != "__ARG__":
+                        break
+
+                args.reverse()
+                output.append(f"{func}({','.join(args)})")
             can_be_unary = False
 
         elif char in "+-" and can_be_unary:
@@ -213,7 +224,15 @@ def parser(expr: str):
 
             operators.append(("^", count))
             can_be_unary = True
+        elif char == ",":
+            while operators and operationSymbol(operators[-1]) != "(":
+                applyOperation()
 
+            if not operators:
+                error(expr, i, "Comma outside function call")
+
+            output.append("__ARG__")
+            can_be_unary = True
         else:
             while (
                 operators
