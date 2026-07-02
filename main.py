@@ -408,7 +408,7 @@ async def guide_slash(interaction: discord.Interaction):
 )
 async def calc_slash(
     interaction: discord.Interaction,
-    expression: str,
+    expr: str,
     fmt: str = "format"
 ):
 
