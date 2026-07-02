@@ -403,7 +403,7 @@ async def guide_slash(interaction: discord.Interaction):
 # ---------------------
 @bot.tree.command(name="calc", description="Evaluate an expression with format support")
 @app_commands.describe(
-    expression="Expression to evaluate",
+    expr="Expression to evaluate",
     fmt="Optional output format"
 )
 async def calc_slash(
