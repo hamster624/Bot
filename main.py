@@ -268,10 +268,9 @@ async def guide(ctx):
                   "floor", "ceil"]
     help_message = "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
-    help_message += "hyper_log(num, height) lets you set the height of the number you log. Example: hyper_log(1000, 3) is penta-log base 10 of 1000 because the height of 3 is pentation (^^^).\n"
+    help_message += "hyper_log(num, height) lets you set the hyper operation of the log. Example: hyper_log(1000, 3) is penta-log base 10 of 1000 because the 3rd hyper operator is pentation (^^^).\n"
     help_message += "Usage: `/calc <expression> [format]`\n"
-    help_message += "Number Usage: You can use scientific or hyper-e."
+    help_message += "Numbers: You can only use scientific or hyper-e. Example: ee63, E63#2."
     await ctx.send(help_message)
 def _eval_in_subprocess(expr: str, safe_globals: dict, q: mp.Queue):
     try:
@@ -409,10 +408,9 @@ async def guide_slash(interaction: discord.Interaction):
                   "floor", "ceil"]
     help_message = "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "For the arrow operation the 1st number is the base, 2nd number are the arrows and the 3rd is the height so arrow(5,4,8)=5^^^^8.\n"
-    help_message += "hyper_log(num, height) lets you set the height of the number you log. Example: hyper_log(1000, 3) is penta-log base 10 of 1000 because the height of 3 is pentation (^^^).\n"
+    help_message += "hyper_log(num, height) lets you set the hyper operation of the log. Example: hyper_log(1000, 3) is penta-log base 10 of 1000 because the 3rd hyper operator is pentation (^^^).\n"
     help_message += "Usage: `/calc <expression> [format]`\n"
-    help_message += "Number Usage: You can use scientific or hyper-e."
+    help_message += "Numbers: You can only use scientific or hyper-e. Example: ee63, E63#2."
     await interaction.response.send_message(help_message)
 
 # ---------------------
