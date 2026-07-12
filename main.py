@@ -541,8 +541,10 @@ MultOnes = [
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
 _log10 = math.log10
+
 LOG10_PHI = 0.20898764024997873
 LOG10_SQRT5 = 0.3494850021680094
+
 # You can ignore these, these are only to help the code.
 def correct(x, base3=10):
     is_inf = 0
@@ -560,6 +562,7 @@ def correct(x, base3=10):
 
     if isinstance(x, list):
         arr = x[:]
+        if arr[1] == 0: return [0, 0]
         if not arr: return [0, 0]
         if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
         if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
@@ -1357,7 +1360,7 @@ def fromformat(x):
         x = x.strip("F")
     
     if x.startswith("e") and (x.count("e") != 1):
-        start_array[2] = x.count("e")-1
+        start_array[2] = x.count("e")
         x = x.strip("e")
     if 'e' in x:
         before, after = x.split("e")
@@ -1389,6 +1392,7 @@ def fromformat(x):
         return arrow(10,float(after)+1,float(before), prec=False)
     try: start_array[1] += float(x)
     except: pass
+    print(start_array)
     return correct(start_array)
 # Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent 2h 15min for this trash
 def fromstring(x):
@@ -1457,6 +1461,7 @@ def arrow_format(x):
     arrow = pol['height']+1
     if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
     return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
+
 F_SMALL = [0, 1]
 for i in range(2, 101): F_SMALL.append(F_SMALL[i-1] + F_SMALL[i-2])
 
@@ -1471,6 +1476,7 @@ def fib(n):
         frac = sub(x, x_floor)
         result = mul(addlayer(frac), addlayer(x_floor))
     return result
+
 def ssqrt(x):
     x = correct(x)
     if x[1] != 0 or x[2] != 0: return x
