@@ -790,7 +790,7 @@ def slog(x, base=10): return hyper_log(x, 2, base)
 def plog(x, base=10): return hyper_log(x, 3, base)
 def hlog(x, base=10): return hyper_log(x, 4, base)
 # Optimized to oblivion but now i barely understand what i did here. On a lenght of 100 elements array with random ints previous version took 0.0925163 seconds while now its only 0.0004117 seconds or on 1000 lenght its 25.8783556 seconds to 0.0015992 seconds so readable code != speed
-def hyper_log(x, k=10, base2=1):
+def hyper_log(x, k=1, base2=10):
     y = correct(x)
     try: x = correct(x, base2)
     except:pass
