@@ -268,7 +268,7 @@ async def guide(ctx):
                   "floor", "ceil"]
     help_message = "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "hyper_log(num, height) lets you set the hyper operation of the log. Example: hyper_log(1000, 3) is penta-log base 10 of 1000 because the 3rd hyper operator is pentation (^^^).\n"
+    help_message += "hyper_log(num, height, base) lets you set the hyper operation of the log. Example: hyper_log(1000, 3, 5) is penta-log base 5 of 1000 because the 3rd hyper operator is pentation (^^^).\n"
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Numbers: You can only use scientific or hyper-e. Example: ee63, E63#2."
     await ctx.send(help_message)
@@ -408,7 +408,7 @@ async def guide_slash(interaction: discord.Interaction):
                   "floor", "ceil"]
     help_message = "**Available Formats:**\n" + ", ".join(formats) + "\n\n"
     help_message += "**Supported Operations:**\n" + ", ".join(operations) + "\n\n"
-    help_message += "hyper_log(num, height) lets you set the hyper operation of the log. Example: hyper_log(1000, 3) is penta-log base 10 of 1000 because the 3rd hyper operator is pentation (^^^).\n"
+    help_message += "hyper_log(num, height, base) lets you set the hyper operation of the log. Example: hyper_log(1000, 3, 5) is penta-log base 5 of 1000 because the 3rd hyper operator is pentation (^^^).\n"
     help_message += "Usage: `/calc <expression> [format]`\n"
     help_message += "Numbers: You can only use scientific or hyper-e. Example: ee63, E63#2."
     await interaction.response.send_message(help_message)
@@ -786,11 +786,11 @@ def log(x):
     if len(arr) > 3: return correct(arr)
     return correct(arr)
 
-def slog(x, base=10): return hyper_log(x, base, 2)
-def plog(x, base=10): return hyper_log(x, base, 3)
-def hlog(x, base=10): return hyper_log(x, base, 4)
+def slog(x, base=10): return hyper_log(x, 2, base)
+def plog(x, base=10): return hyper_log(x, 3, base)
+def hlog(x, base=10): return hyper_log(x, 4, base)
 # Optimized to oblivion but now i barely understand what i did here. On a lenght of 100 elements array with random ints previous version took 0.0925163 seconds while now its only 0.0004117 seconds or on 1000 lenght its 25.8783556 seconds to 0.0015992 seconds so readable code != speed
-def hyper_log(x, base2=10, k=1):
+def hyper_log(x, k=10, base2=1):
     y = correct(x)
     try: x = correct(x, base2)
     except:pass
